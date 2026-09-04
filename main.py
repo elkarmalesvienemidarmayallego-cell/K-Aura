@@ -3,21 +3,27 @@ from fastapi import FastAPI, HTTPException
 from google.cloud import firestore
 from pydantic import BaseModel
 
-app = FastAPI(title="K-Aura Core", version="1.0.0")
+app = FastAPI(title="K-Aura Core", version="1.1.0")
 
-# Inicialización de Firestore usando la infraestructura estándar de GCP
+# Inicialización de Firestore
 db = firestore.Client()
 
 
 class TrafficEvent(BaseModel):
   source: str
   campaign: str
-  metadata_tag: str
+  rhythm_tag: str
+  technologic_flag: bool
+  license_id: str
 
 
 @app.get("/")
 def health_check():
-  return {"status": "active", "ecosystem": "K-Aura"}
+  return {
+      "status": "active",
+      "ecosystem": "K-Aura",
+      "module": "Technologic & Rhythm Engine",
+  }
 
 
 @app.post("/api/v1/track")
@@ -27,7 +33,9 @@ def track_traffic(event: TrafficEvent):
     doc_ref.set({
         "source": event.source,
         "campaign": event.campaign,
-        "metadata_tag": event.metadata_tag,
+        "rhythm_tag": event.rhythm_tag,
+        "technologic_flag": event.technologic_flag,
+        "license_id": event.license_id,
         "timestamp": firestore.SERVER_TIMESTAMP,
     })
     return {"status": "success", "id": doc_ref.id}
