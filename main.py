@@ -5,8 +5,14 @@ from pydantic import BaseModel
 
 app = FastAPI(title="K-Aura Core", version="1.1.0")
 
-# Inicialización de Firestore
-db = firestore.Client()
+# Safe Firestore initialization
+db = None
+try:
+    from google.cloud import firestore
+    db = firestore.Client()
+except Exception as e:
+    print(f"Firestore not initialized: {e}")
+
 
 
 class TrafficEvent(BaseModel):
