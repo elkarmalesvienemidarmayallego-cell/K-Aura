@@ -8,10 +8,10 @@ app = FastAPI(title="K-Aura Core", version="1.1.0")
 # Safe Firestore initialization
 db = None
 try:
-    from google.cloud import firestore
     db = firestore.Client()
 except Exception as e:
     print(f"Firestore not initialized: {e}")
+
 
 
 
