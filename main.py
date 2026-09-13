@@ -2,8 +2,17 @@ import os
 from fastapi import FastAPI, HTTPException
 from google.cloud import firestore
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="K-Aura Core", version="1.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permite conexiones desde cualquier origen web
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Safe Firestore initialization
 db = None
