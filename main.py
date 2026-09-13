@@ -56,3 +56,31 @@ def track_traffic(event: TrafficEvent):
     return {"status": "success", "id": doc_ref.id}
   except Exception as e:
     raise HTTPException(status_code=500, detail=str(e))
+
+BOTS_REGULADOS = {
+    "stephenie-rodiles": {
+        "nombre": "Stephenie Rodiles S.",
+        "enfoque": "Esgrima dialéctica e intelecto afilado.",
+        "estado": "activo",
+    },
+    "cynthia-aviles": {
+        "nombre": "Cynthia Aviles",
+        "enfoque": "Interacción directa y flujo visual dinámico.",
+        "estado": "activo",
+    },
+    "lorena-sanchez": {
+        "nombre": "Lorena Sanchez",
+        "enfoque": "Línea de interacción estratégica.",
+        "estado": "activo",
+    },
+    "azul-gallareta": {
+        "nombre": "Azul Gallareta",
+        "enfoque": "Identidad directa y de alta afinidad.",
+        "estado": "activo",
+    },
+}
+
+
+@app.get("/api/v1/bots")
+async def listar_bots():
+  return {"status": "success", "bots_regulados": BOTS_REGULADOS}
