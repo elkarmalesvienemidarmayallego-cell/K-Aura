@@ -3,3 +3,4 @@ uvicorn
 pydantic
 google-cloud-firestore
 requests
+google-genai
