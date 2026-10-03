@@ -3,8 +3,9 @@ from fastapi import FastAPI, HTTPException, Header
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-app = FastAPI(title="K-Aura SaaS B2B Engine", version="2.1.0")
+app = FastAPI(title="K-Aura SaaS B2B Engine", version="2.2.0")
 
+# Clave Maestra de Control (configurable en Render como ADMIN_API_KEY)
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "K-AURA-MASTER-2026")
 
 try:
@@ -43,23 +44,26 @@ async def serve_dashboard():
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
-        <!-- METADATOS Y MINIATURA PARA FACEBOOK, WHATSAPP Y REDES (OPEN GRAPH) -->
+        <!-- METADATOS Y MINIATURA OPTIMIZADA PARA REDES SOCIALES (OPEN GRAPH) -->
         <title>K-Aura | SaaS Control Panel & Risk Engine</title>
-        <meta name="description" content="Motor de mitigación de riesgo entrópico en Polygon con IA Gemini. Arquitectura por Dr. Mauro Falcón M.">
+        <meta name="description" content="Motor de mitigación de riesgo entrópico en Polygon con IA Gemini. Creado por Dr. Mauro Falcón M.">
         
+        <!-- OPEN GRAPH / FACEBOOK / WHATSAPP -->
         <meta property="og:type" content="website">
         <meta property="og:url" content="https://k-aura-ser.onrender.com/">
-        <meta property="og:title" content="🛡️ K-Aura // Quempromet SaaS Engine">
+        <meta property="og:title" content="🛡️ K-AURA // QUEMPROMET SaaS ENGINE">
         <meta property="og:description" content="Algorithmic Risk & Entropy Management on Polygon. Tecnología que no especula, asegura. Creado por Dr. Mauro Falcón M.">
-        <meta property="og:image" content="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop">
+        <meta property="og:image" content="https://cdn.pixabay.com/photo/2021/08/04/13/06/software-development-6521720_1200.jpg">
+        <meta property="og:image:secure_url" content="https://cdn.pixabay.com/photo/2021/08/04/13/06/software-development-6521720_1200.jpg">
+        <meta property="og:image:type" content="image/jpeg">
         <meta property="og:image:width" content="1200">
         <meta property="og:image:height" content="630">
         
         <!-- TWITTER CARDS -->
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:title" content="🛡️ K-Aura // Quempromet SaaS Engine">
+        <meta name="twitter:title" content="🛡️ K-AURA // QUEMPROMET SaaS ENGINE">
         <meta name="twitter:description" content="Control de riesgo entrópico on-chain y monitoreo con IA Gemini. Creado por Dr. Mauro Falcón M.">
-        <meta name="twitter:image" content="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop">
+        <meta name="twitter:image" content="https://cdn.pixabay.com/photo/2021/08/04/13/06/software-development-6521720_1200.jpg">
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <style>
@@ -81,6 +85,7 @@ async def serve_dashboard():
             input, select { background: #070a12; border: 1px solid #334155; color: white; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-top: 5px; }
             .footer { margin-top: 40px; text-align: center; border-top: 1px solid #1e293b; padding-top: 20px; color: #64748b; font-size: 0.85em; }
             .badge-group { display: flex; justify-content: space-around; margin-top: 10px; padding: 10px; background: #070a12; border-radius: 8px; border: 1px solid #1e293b; font-size: 0.85em; flex-wrap: wrap; gap: 5px; }
+            video { border-radius: 8px; border: 1px solid #1e293b; margin-top: 10px; }
         </style>
     </head>
     <body>
@@ -103,6 +108,18 @@ async def serve_dashboard():
                 <span>🔒 Security & Access Control Active</span>
                 <span>⚡ Real-Time Web3 Sync</span>
                 <span>🎯 Stop Loss: 80% | Take Profit: 100%</span>
+            </div>
+
+            <!-- MÓDULO DE VIDEO PROMOCIONAL DE PRESENTACIÓN -->
+            <div class="card" style="text-align: center;">
+                <h3 style="margin-top: 0;">🎬 Demostración Visual de Arquitectura K-Aura</h3>
+                <video width="100%" height="auto" controls poster="https://cdn.pixabay.com/photo/2021/08/04/13/06/software-development-6521720_1200.jpg">
+                    <source src="http://googleusercontent.com/generated_video_content/9451239682610973525" type="video/mp4">
+                    Tu navegador no soporta la reproducción de video HTML5.
+                </video>
+                <p style="font-size: 0.85em; color: #94a3b8; margin-top: 10px;">
+                    Demostración conceptual de monitoreo entrópico y control determinista B2B on-chain.
+                </p>
             </div>
 
             <div class="grid">
