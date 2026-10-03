@@ -5,7 +5,6 @@ from pydantic import BaseModel
 
 app = FastAPI(title="K-Aura SaaS B2B Engine", version="2.2.0")
 
-# Clave Maestra de Control (configurable en Render como ADMIN_API_KEY)
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "K-AURA-MASTER-2026")
 
 try:
@@ -44,7 +43,7 @@ async def serve_dashboard():
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
-        <!-- METADATOS Y MINIATURA OPTIMIZADA PARA REDES SOCIALES (OPEN GRAPH) -->
+        <!-- METADATOS Y MINIATURA OPTIMIZADA PARA REDES SOCIALES -->
         <title>K-Aura | SaaS Control Panel & Risk Engine</title>
         <meta name="description" content="Motor de mitigación de riesgo entrópico en Polygon con IA Gemini. Creado por Dr. Mauro Falcón M.">
         
@@ -85,7 +84,6 @@ async def serve_dashboard():
             input, select { background: #070a12; border: 1px solid #334155; color: white; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-top: 5px; }
             .footer { margin-top: 40px; text-align: center; border-top: 1px solid #1e293b; padding-top: 20px; color: #64748b; font-size: 0.85em; }
             .badge-group { display: flex; justify-content: space-around; margin-top: 10px; padding: 10px; background: #070a12; border-radius: 8px; border: 1px solid #1e293b; font-size: 0.85em; flex-wrap: wrap; gap: 5px; }
-            video { border-radius: 8px; border: 1px solid #1e293b; margin-top: 10px; }
         </style>
     </head>
     <body>
@@ -110,15 +108,19 @@ async def serve_dashboard():
                 <span>🎯 Stop Loss: 80% | Take Profit: 100%</span>
             </div>
 
-            <!-- MÓDULO DE VIDEO PROMOCIONAL DE PRESENTACIÓN -->
+            <!-- REPRODUCTOR DE YOUTUBE -->
             <div class="card" style="text-align: center;">
                 <h3 style="margin-top: 0;">🎬 Demostración Visual de Arquitectura K-Aura</h3>
-                <video width="100%" height="auto" controls poster="https://cdn.pixabay.com/photo/2021/08/04/13/06/software-development-6521720_1200.jpg">
-                    <source src="http://googleusercontent.com/generated_video_content/9451239682610973525" type="video/mp4">
-                    Tu navegador no soporta la reproducción de video HTML5.
-                </video>
+                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; border: 1px solid #1e293b;">
+                    <iframe 
+                        src="https://www.youtube.com/embed/1GCOPWzDZSk" 
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
                 <p style="font-size: 0.85em; color: #94a3b8; margin-top: 10px;">
-                    Demostración conceptual de monitoreo entrópico y control determinista B2B on-chain.
+                    Demostración conceptual de monitoreo entrópico y control determinista B2B on-chain por el Dr. Mauro Falcón M.
                 </p>
             </div>
 
