@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-pydantic
-google-cloud-firestore
-requests
+stripe
 google-genai
+pydantic
+requests
