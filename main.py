@@ -1,9 +1,11 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-app = FastAPI(title="K-Aura SaaS B2B Engine", version="2.0.0")
+app = FastAPI(title="K-Aura SaaS B2B Engine", version="2.1.0")
+
+ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "K-AURA-MASTER-2026")
 
 try:
     import stripe
@@ -12,39 +14,22 @@ try:
 except ImportError:
     STRIPE_AVAILABLE = False
 
-class StripeCheckoutRequest(BaseModel):
-    price_id: str
-    customer_email: str
-    success_url: str = "https://quempromet.com/success"
-    cancel_url: str = "https://quempromet.com/cancel"
-
-@app.post("/api/v1/stripe/create-checkout-session")
-async def create_checkout_session(data: StripeCheckoutRequest):
-    if not STRIPE_AVAILABLE:
-        raise HTTPException(status_code=500, detail="Módulo Stripe no disponible.")
-    try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{"price": data.price_id, "quantity": 1}],
-            mode="subscription",
-            customer_email=data.customer_email,
-            success_url=data.success_url,
-            cancel_url=data.cancel_url,
-        )
-        return {"checkout_url": session.url, "session_id": session.id}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
 class EngineControlRequest(BaseModel):
     stop_loss_pct: float
     take_profit_pct: float
     network: str
 
 @app.post("/api/v1/engine/update-config")
-async def update_engine_config(config: EngineControlRequest):
+async def update_engine_config(config: EngineControlRequest, x_api_key: str = Header(None, alias="X-API-Key")):
+    if x_api_key != ADMIN_API_KEY:
+        raise HTTPException(
+            status_code=401, 
+            detail="⚠️ ACCESO NO AUTORIZADO: Clave de control o API Key inválida."
+        )
+    
     return {
         "status": "CONFIG_UPDATED",
-        "message": f"⚡ Motor recalibrado exitosamente en red {config.network.upper()}",
+        "message": f"⚡ Motor recalibrado por Autorización del Creador en red {config.network.upper()}",
         "new_stop_loss": f"{config.stop_loss_pct}%",
         "new_take_profit": f"{config.take_profit_pct}%"
     }
@@ -57,14 +42,33 @@ async def serve_dashboard():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>K-Aura | SaaS Control Panel</title>
+        
+        <!-- METADATOS Y MINIATURA PARA FACEBOOK, WHATSAPP Y REDES (OPEN GRAPH) -->
+        <title>K-Aura | SaaS Control Panel & Risk Engine</title>
+        <meta name="description" content="Motor de mitigación de riesgo entrópico en Polygon con IA Gemini. Arquitectura por Dr. Mauro Falcón M.">
+        
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="https://k-aura-ser.onrender.com/">
+        <meta property="og:title" content="🛡️ K-Aura // Quempromet SaaS Engine">
+        <meta property="og:description" content="Algorithmic Risk & Entropy Management on Polygon. Tecnología que no especula, asegura. Creado por Dr. Mauro Falcón M.">
+        <meta property="og:image" content="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        
+        <!-- TWITTER CARDS -->
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="🛡️ K-Aura // Quempromet SaaS Engine">
+        <meta name="twitter:description" content="Control de riesgo entrópico on-chain y monitoreo con IA Gemini. Creado por Dr. Mauro Falcón M.">
+        <meta name="twitter:image" content="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1200&auto=format&fit=crop">
+
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #070a12; color: #e2e8f0; margin: 0; padding: 20px; }
             .container { max-width: 1100px; margin: 0 auto; }
             .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 15px; flex-wrap: wrap; gap: 10px; }
             .brand-title { display: flex; align-items: center; gap: 12px; }
-            .logo-shield { font-size: 28px; background: linear-gradient(135deg, #2563eb, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; letter-spacing: -1px; }
+            .logo-shield { font-size: 28px; background: linear-gradient(135deg, #2563eb, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; }
+            .creator-tag { font-size: 0.8em; color: #38bdf8; font-weight: 600; letter-spacing: 0.5px; }
             .status-container { display: flex; gap: 15px; align-items: center; }
             .led { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
             .led-green { background-color: #22c55e; box-shadow: 0 0 10px #22c55e; animation: pulse 1.5s infinite; }
@@ -76,7 +80,7 @@ async def serve_dashboard():
             button:hover { background: linear-gradient(135deg, #1d4ed8, #1e40af); box-shadow: 0 0 15px rgba(37,99,235,0.5); }
             input, select { background: #070a12; border: 1px solid #334155; color: white; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-top: 5px; }
             .footer { margin-top: 40px; text-align: center; border-top: 1px solid #1e293b; padding-top: 20px; color: #64748b; font-size: 0.85em; }
-            .badge-group { display: flex; justify-content: space-around; margin-top: 10px; padding: 10px; background: #070a12; border-radius: 8px; border: 1px solid #1e293b; font-size: 0.85em; }
+            .badge-group { display: flex; justify-content: space-around; margin-top: 10px; padding: 10px; background: #070a12; border-radius: 8px; border: 1px solid #1e293b; font-size: 0.85em; flex-wrap: wrap; gap: 5px; }
         </style>
     </head>
     <body>
@@ -86,7 +90,7 @@ async def serve_dashboard():
                     <span class="logo-shield">🛡️ K-AURA</span>
                     <div>
                         <h2 style="margin: 0; font-size: 1.3em;">QUEMPROMET SaaS ENGINE</h2>
-                        <span style="font-size: 0.75em; color: #94a3b8;">Algorithmic Risk & Entropy Management</span>
+                        <span class="creator-tag">Arquitectura Intelectual por Dr. Mauro Falcón M.</span>
                     </div>
                 </div>
                 <div class="status-container">
@@ -96,15 +100,19 @@ async def serve_dashboard():
             </div>
 
             <div class="badge-group">
-                <span>🔒 GCP AI Studio Policy Aligned</span>
+                <span>🔒 Security & Access Control Active</span>
                 <span>⚡ Real-Time Web3 Sync</span>
                 <span>🎯 Stop Loss: 80% | Take Profit: 100%</span>
             </div>
 
             <div class="grid">
                 <div class="card">
-                    <h3>⚡ Calibración del Motor en Vivo</h3>
-                    <label>Red Blockchain Destino:</label>
+                    <h3>⚡ Calibración Protegida del Motor</h3>
+                    
+                    <label>Clave de Autorización / API Key:</label>
+                    <input type="password" id="apiKey" placeholder="Ingresa tu clave de acceso autorizada">
+
+                    <label style="margin-top:15px; display:block;">Red Blockchain Destino:</label>
                     <select id="net">
                         <option value="polygon">Polygon Mainnet (POL/MATIC)</option>
                         <option value="ethereum">Ethereum Mainnet (ETH)</option>
@@ -117,8 +125,8 @@ async def serve_dashboard():
                     <label style="margin-top:15px; display:block;">Objetivo Take Profit (%):</label>
                     <input type="number" id="tp" value="100">
 
-                    <button onclick="applyConfig()">Ejecutar Recalibración On-Chain</button>
-                    <p id="msg" style="color:#38bdf8; font-weight: 500; font-size: 0.9em;"></p>
+                    <button onclick="applyConfig()">Ejecutar Recalibración Autorizada</button>
+                    <p id="msg" style="font-weight: 500; font-size: 0.9em; margin-top: 10px;"></p>
                 </div>
 
                 <div class="card">
@@ -129,7 +137,7 @@ async def serve_dashboard():
 
             <div class="footer">
                 <p><strong>© QUEMPROMET / KEMPROMED ECOSYSTEM. Todos los derechos reservados.</strong></p>
-                <p>Desarrollado bajo estándares institucionales B2B. Propiedad Intelectual protegida. Infraestructura desplegada en Render & GCP Gemini AI Studio.</p>
+                <p>Dirección y Arquitectura Tecnológica por el <strong>Dr. Mauro Falcón M.</strong> | Propiedad Intelectual protegida. Infraestructura desplegada en Render & GCP Gemini AI Studio.</p>
             </div>
         </div>
 
@@ -152,13 +160,38 @@ async def serve_dashboard():
             });
 
             async function applyConfig() {
-                const res = await fetch('/api/v1/engine/update-config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ stop_loss_pct: parseFloat(sl.value), take_profit_pct: parseFloat(tp.value), network: net.value })
-                });
-                const data = await res.json();
-                msg.innerText = data.message;
+                const key = document.getElementById('apiKey').value;
+                const msg = document.getElementById('msg');
+
+                if (!key) {
+                    msg.style.color = '#ef4444';
+                    msg.innerText = '❌ Error: Debes ingresar tu Clave de Acceso para autorizar la operación.';
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/v1/engine/update-config', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-API-Key': key 
+                        },
+                        body: JSON.stringify({ stop_loss_pct: parseFloat(sl.value), take_profit_pct: parseFloat(tp.value), network: net.value })
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (res.ok) {
+                        msg.style.color = '#38bdf8';
+                        msg.innerText = data.message;
+                    } else {
+                        msg.style.color = '#ef4444';
+                        msg.innerText = '❌ ' + (data.detail || 'Acceso denegado.');
+                    }
+                } catch (e) {
+                    msg.style.color = '#ef4444';
+                    msg.innerText = '❌ Error de comunicación con el servidor.';
+                }
             }
         </script>
     </body>
