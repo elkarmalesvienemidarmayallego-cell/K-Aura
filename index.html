@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>K-AURA | A/B Validation Engine & Risk Analytics</title>
-  <!-- Chart.js para Renderizado de Gráficas de Rendimiento en Tiempo Real -->
+  <title>K-AURA | Core Engine & Interactive SaaS Control</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -22,169 +21,165 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg-dark); color: var(--text-white); padding: 20px 15px; line-height: 1.5; }
 
-    /* CABECERA TÉCNICA Y ESTADO DE PRUEBA */
-    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 25px; flex-wrap: wrap; gap: 10px; }
-    .title-block h1 { font-size: 20px; font-weight: 800; }
-    .title-block p { font-size: 12px; color: var(--cyan-accent); font-family: monospace; }
-    
-    .status-pill { background: rgba(0, 212, 178, 0.1); border: 1px solid var(--cyan-accent); color: var(--cyan-accent); padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    header { border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; }
+    .header-tag { color: var(--cyan-accent); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+    .main-title { font-size: 22px; font-weight: 800; }
 
-    /* METRICAS KPI COMPARATIVAS */
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }
-    .kpi-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; }
-    .kpi-label { font-size: 11px; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; }
-    .kpi-value { font-size: 22px; font-weight: 800; margin: 6px 0; }
-    .kpi-sub { font-size: 11px; font-weight: 600; }
+    .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+    .card-title { font-size: 15px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; color: var(--cyan-accent); }
+
+    /* CONSOLA DE CALIBRACIÓN Y LICENCIAMIENTO B2B */
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-size: 12px; color: var(--text-gray); margin-bottom: 6px; font-weight: 600; }
+    .form-input, .form-select { width: 100%; background: #070B14; border: 1px solid var(--border-color); color: #FFF; padding: 10px; border-radius: 8px; font-size: 13px; outline: none; }
+    .form-input:focus { border-color: var(--cyan-accent); }
+
+    .range-container { display: flex; align-items: center; gap: 12px; }
+    .range-slider { flex: 1; accent-color: var(--cyan-accent); }
+    .range-val { font-family: monospace; font-weight: 700; font-size: 14px; width: 50px; text-align: right; color: var(--cyan-accent); }
+
+    .btn-submit { width: 100%; background: var(--blue-accent); color: #FFF; font-weight: 700; font-size: 13px; padding: 12px; border-radius: 8px; border: none; cursor: pointer; margin-top: 10px; }
+    .btn-submit:hover { opacity: 0.9; }
+
+    /* METRICAS KPI */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .kpi-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; }
+    .kpi-label { font-size: 10px; color: var(--text-gray); text-transform: uppercase; }
+    .kpi-value { font-size: 20px; font-weight: 800; margin: 4px 0; }
     .text-green { color: var(--green-success); }
-    .text-blue { color: var(--blue-accent); }
     .text-cyan { color: var(--cyan-accent); }
+    .text-blue { color: var(--blue-accent); }
 
-    /* SECCIÓN DE GRÁFICA COMPARATIVA */
-    .chart-container { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 25px; }
-    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .chart-title { font-size: 15px; font-weight: 700; }
-
-    /* TABLA DE AUDITORÍA DE EJECUCIÓN */
-    .table-container { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; overflow-x: auto; }
+    /* TABLA Y GRÁFICA */
+    .table-container { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
-    th { color: var(--text-gray); font-weight: 600; border-bottom: 1px solid var(--border-color); padding: 10px; }
-    td { padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .badge-a { background: rgba(59, 130, 246, 0.2); color: var(--blue-accent); padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
-    .badge-b { background: rgba(0, 212, 178, 0.2); color: var(--cyan-accent); padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
-
-    /* PANEL DE CONTROL DEL EXPERIMENTO */
-    .control-panel { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
-    .btn-action { background: var(--blue-accent); color: #FFF; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; }
-    .btn-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--red-alert); color: var(--red-alert); }
+    th { color: var(--text-gray); font-weight: 600; border-bottom: 1px solid var(--border-color); padding: 8px; }
+    td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
   </style>
 </head>
 <body>
 
   <header>
-    <div class="title-block">
-      <h1>K-AURA | Validation Engine A/B</h1>
-      <p>Prueba de Concepto: Parámetros Fijos vs. Motor Estocástico Quant/Orb</p>
-    </div>
-    <div class="status-pill">Prueba Activa en Vivo</div>
+    <div class="header-tag">DR. MAURO ERNESTO FALCÓN MUÑOZ | PROPIEDAD INTELECTUAL</div>
+    <h1 class="main-title">K-AURA — Motor de Control & Licenciamiento B2B</h1>
   </header>
 
-  <!-- TARJETAS DE MÉTRICAS KPI COMPARA ATIVAS -->
+  <!-- 1. GATILLOS INTERACTIVOS DE LICENCIAMIENTO B2B (MÓDULO COMERCIAL) -->
+  <div class="card">
+    <div class="card-title">⚡ Calibración Protegida del Motor (Gatillos Programables)</div>
+    
+    <div class="form-group">
+      <label class="form-label">Clave de Autorización / API Key Licenciada:</label>
+      <input type="password" class="form-input" value="K-AURA-PROD-883921X" placeholder="Ingresa tu API Key">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Red Blockchain Destino:</label>
+      <select class="form-select">
+        <option>Polygon Mainnet (POL/MATIC)</option>
+        <option>Solana Mainnet (SOL / PumpSwap Node)</option>
+        <option>Ethereum Mainnet (ETH)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Umbral Stop Loss Dinámico (% Límite de Pérdida Protegida):</label>
+      <div class="range-container">
+        <input type="range" class="range-slider" min="1" max="30" value="8" id="slRange" oninput="document.getElementById('slVal').innerText = this.value + '%'">
+        <span class="range-val" id="slVal">8%</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Objetivo Take Profit (% Margen Objetivo Comercial):</label>
+      <div class="range-container">
+        <input type="range" class="range-slider" min="5" max="200" value="25" id="tpRange" oninput="document.getElementById('tpVal').innerText = this.value + '%'">
+        <span class="range-val" id="tpVal">25%</span>
+      </div>
+    </div>
+
+    <button class="btn-submit" onclick="actualizarGatillos()">Ejecutar & Programar Gatillos en Nodo Real</button>
+  </div>
+
+  <!-- 2. TARJETAS COMPARATIVAS DE PRUEBA A/B -->
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-label">Modelo Base (Fijo / Control)</div>
-      <div class="kpi-value text-blue">+$1,450.00 USD</div>
-      <div class="kpi-sub text-green">✓ Retorno Real Protegido</div>
+      <div class="kpi-label">Estrategia Base (Gatillos Fijos)</div>
+      <div class="kpi-value text-blue">+$1,450 USD</div>
+      <div style="font-size: 10px; color: var(--green-success);">✓ Control de Riesgo Nativo</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Modelo Dinámico (Quant / Orb)</div>
-      <div class="kpi-value text-cyan">+$1,620.00 USD</div>
-      <div class="kpi-sub text-cyan">▲ +11.7% Rendimiento Bruto</div>
+      <div class="kpi-label">Estrategia Dinámica (Quant/Orb)</div>
+      <div class="kpi-value text-cyan">+$1,620 USD</div>
+      <div style="font-size: 10px; color: var(--cyan-accent);">▲ Modo Estocástico Evaluación</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Fricción de Red (Fuerza de Gas)</div>
-      <div class="kpi-value text-green">-$140.00 USD</div>
-      <div class="kpi-sub text-green">Deducido por Filtro CEET</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Diferencial Neto A/B</div>
-      <div class="kpi-value text-green">+$30.00 USD</div>
-      <div class="kpi-sub text-green">Margen Ganador Actual: Modelo B</div>
+      <div class="kpi-label">Fricción Fondeo/Gas (CEET)</div>
+      <div class="kpi-value text-green">-$140 USD</div>
+      <div style="font-size: 10px; color: var(--text-gray);">Descuento Automático</div>
     </div>
   </div>
 
-  <!-- VISUALIZADOR GRÁFICO COMPARATIVO EN TIEMPO REAL -->
-  <div class="chart-container">
-    <div class="chart-header">
-      <div class="chart-title">Curva de Rendimiento Neto Acumulado (60 Minutos)</div>
+  <!-- 3. GRÁFICA INTERACTIVA Y AUDITORÍA EN VIVO -->
+  <div class="card">
+    <div class="card-title">📈 Monitoreo Comparativo en Tiempo Real (60 Minutos)</div>
+    <canvas id="abChart" height="110"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Registro Transaccional de Gatillos Programados</div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Red</th>
+            <th>Gatillo Programado</th>
+            <th>Fricción (CEET)</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tablaAuditoria">
+          <tr>
+            <td>02:45:10</td>
+            <td>Polygon</td>
+            <td>TP +25% / SL -8%</td>
+            <td>$1.20 USD</td>
+            <td><span class="text-green">Gatillo Activo</span></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <canvas id="abChart" height="100"></canvas>
-  </div>
-
-  <!-- REGISTRO DE AUDITORÍA OPERATIVA EN VIVO -->
-  <div class="table-container">
-    <div class="chart-title" style="margin-bottom: 12px;">Auditoría Transaccional de Validación</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Timestamp</th>
-          <th>Estrategia</th>
-          <th>Costo Ejecución (CEET)</th>
-          <th>Stop-Loss / Take-Profit</th>
-          <th>Estado Operativo</th>
-          <th>Resultado Neto</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>16:40:12</td>
-          <td><span class="badge-a">RAMA A (BASE)</span></td>
-          <td>$1.20 USD</td>
-          <td>TP +15% / SL -5% (Fijo)</td>
-          <td><span class="text-green">Ejecutado</span></td>
-          <td class="text-green">+$45.00 USD</td>
-        </tr>
-        <tr>
-          <td>16:41:05</td>
-          <td><span class="badge-b">RAMA B (QUANT)</span></td>
-          <td>$3.50 USD (Priority)</td>
-          <td>TP +22% / SL -3.2% (Dinamico)</td>
-          <td><span class="text-green">Ejecutado (Orb +60%)</span></td>
-          <td class="text-green">+$62.00 USD</td>
-        </tr>
-        <tr>
-          <td>16:43:20</td>
-          <td><span class="badge-b">RAMA B (QUANT)</span></td>
-          <td>$8.90 USD (Alta Red)</td>
-          <td>Ajuste Cancelado</td>
-          <td><span style="color: var(--text-gray);">Abortado por Filtro Quant</span></td>
-          <td>$0.00 USD (Riesgo Evitado)</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- PANEL DE DECISIÓN DE INGENIERÍA -->
-  <div class="control-panel">
-    <button class="btn-action" onclick="alert('Simulación actualizada con nuevo bloque de datos.')">Simular Siguiente Bloque (60 min)</button>
-    <button class="btn-action btn-danger" onclick="alert('Estrategia Dinámica descartada. Retornando 100% a Parámetros Fijos Base.')">Descartar Modelo B (Retener Solo Base)</button>
   </div>
 
   <script>
-    // Configuración de Gráfica de Comparación de Rendimiento
+    function actualizarGatillos() {
+      const sl = document.getElementById('slRange').value;
+      const tp = document.getElementById('tpRange').value;
+      alert(`Gatillos K-AURA reprogramados exitosamente:\n- Stop Loss: -${sl}%\n- Take Profit: +${tp}%\nNodo actualizado en la red seleccionada.`);
+      
+      const tabla = document.getElementById('tablaAuditoria');
+      const nuevaFila = `<tr>
+        <td>${new Date().toLocaleTimeString()}</td>
+        <td>Polygon</td>
+        <td>TP +${tp}% / SL -${sl}%</td>
+        <td>$1.50 USD</td>
+        <td><span class="text-green">Gatillo Activo</span></td>
+      </tr>`;
+      tabla.innerHTML = nuevaFila + tabla.innerHTML;
+    }
+
     const ctx = document.getElementById('abChart').getContext('2d');
-    const abChart = new Chart(ctx, {
+    new Chart(ctx, {
       type: 'line',
       data: {
         labels: ['10m', '20m', '30m', '40m', '50m', '60m'],
         datasets: [
-          {
-            label: 'Modelo Base Fijo (Control Real)',
-            data: [200, 450, 700, 950, 1200, 1450],
-            borderColor: '#3B82F6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            borderWidth: 2,
-            tension: 0.3
-          },
-          {
-            label: 'Modelo Dinámico Quant/Orb (Prueba)',
-            data: [180, 500, 820, 1100, 1350, 1620],
-            borderColor: '#00D4B2',
-            backgroundColor: 'rgba(0, 212, 178, 0.1)',
-            borderWidth: 2,
-            tension: 0.3
-          }
+          { label: 'Estrategia Fija (Control)', data: [200, 450, 700, 950, 1200, 1450], borderColor: '#3B82F6', borderWidth: 2 },
+          { label: 'Estrategia Quant (Prueba)', data: [180, 500, 820, 1100, 1350, 1620], borderColor: '#00D4B2', borderWidth: 2 }
         ]
       },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { labels: { color: '#94A3B8', font: { size: 12 } } }
-        },
-        scales: {
-          x: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-          y: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
-        }
-      }
+      options: { responsive: true, plugins: { legend: { labels: { color: '#94A3B8' } } } }
     });
   </script>
 
