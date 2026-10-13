@@ -1,218 +1,192 @@
-import os
-from fastapi import FastAPI, HTTPException, Header
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-
-app = FastAPI(title="K-Aura SaaS B2B Engine", version="2.2.0")
-
-ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "K-AURA-MASTER-2026")
-
-try:
-    import stripe
-    stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_mock_key")
-    STRIPE_AVAILABLE = True
-except ImportError:
-    STRIPE_AVAILABLE = False
-
-class EngineControlRequest(BaseModel):
-    stop_loss_pct: float
-    take_profit_pct: float
-    network: str
-
-@app.post("/api/v1/engine/update-config")
-async def update_engine_config(config: EngineControlRequest, x_api_key: str = Header(None, alias="X-API-Key")):
-    if x_api_key != ADMIN_API_KEY:
-        raise HTTPException(
-            status_code=401, 
-            detail="⚠️ ACCESO NO AUTORIZADO: Clave de control o API Key inválida."
-        )
-    
-    return {
-        "status": "CONFIG_UPDATED",
-        "message": f"⚡ Motor recalibrado por Autorización del Creador en red {config.network.upper()}",
-        "new_stop_loss": f"{config.stop_loss_pct}%",
-        "new_take_profit": f"{config.take_profit_pct}%"
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K-AURA | A/B Validation Engine & Risk Analytics</title>
+  <!-- Chart.js para Renderizado de Gráficas de Rendimiento en Tiempo Real -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg-dark: #070B14;
+      --card-bg: #0D1527;
+      --border-color: #1E293B;
+      --cyan-accent: #00D4B2;
+      --blue-accent: #3B82F6;
+      --green-success: #10B981;
+      --red-alert: #EF4444;
+      --text-white: #FFFFFF;
+      --text-gray: #94A3B8;
     }
 
-@app.get("/", response_class=HTMLResponse)
-async def serve_dashboard():
-    return """
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        
-        <!-- METADATOS Y MINIATURA OPTIMIZADA PARA REDES SOCIALES -->
-        <title>K-Aura | SaaS Control Panel & Risk Engine</title>
-        <meta name="description" content="Motor de mitigación de riesgo entrópico en Polygon con IA Gemini. Creado por Dr. Mauro Falcón M.">
-        
-        <!-- OPEN GRAPH / FACEBOOK / WHATSAPP -->
-        <meta property="og:type" content="website">
-        <meta property="og:url" content="https://k-aura-ser.onrender.com/">
-        <meta property="og:title" content="🛡️ K-AURA // QUEMPROMET SaaS ENGINE">
-        <meta property="og:description" content="Algorithmic Risk & Entropy Management on Polygon. Tecnología que no especula, asegura. Creado por Dr. Mauro Falcón M.">
-        <meta property="og:image" content="https://cdn.pixabay.com/photo/2021/08/04/13/06/software-development-6521720_1200.jpg">
-        <meta property="og:image:secure_url" content="https://cdn.pixabay.com/photo/2021/08/04/13/06/software-development-6521720_1200.jpg">
-        <meta property="og:image:type" content="image/jpeg">
-        <meta property="og:image:width" content="1200">
-        <meta property="og:image:height" content="630">
-        
-        <!-- TWITTER CARDS -->
-        <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:title" content="🛡️ K-AURA // QUEMPROMET SaaS ENGINE">
-        <meta name="twitter:description" content="Control de riesgo entrópico on-chain y monitoreo con IA Gemini. Creado por Dr. Mauro Falcón M.">
-        <meta name="twitter:image" content="https://cdn.pixabay.com/photo/2021/08/04/13/06/software-development-6521720_1200.jpg">
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-white); padding: 20px 15px; line-height: 1.5; }
 
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #070a12; color: #e2e8f0; margin: 0; padding: 20px; }
-            .container { max-width: 1100px; margin: 0 auto; }
-            .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; padding-bottom: 15px; flex-wrap: wrap; gap: 10px; }
-            .brand-title { display: flex; align-items: center; gap: 12px; }
-            .logo-shield { font-size: 28px; background: linear-gradient(135deg, #2563eb, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; }
-            .creator-tag { font-size: 0.8em; color: #38bdf8; font-weight: 600; letter-spacing: 0.5px; }
-            .status-container { display: flex; gap: 15px; align-items: center; }
-            .led { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-            .led-green { background-color: #22c55e; box-shadow: 0 0 10px #22c55e; animation: pulse 1.5s infinite; }
-            .led-blue { background-color: #38bdf8; box-shadow: 0 0 10px #38bdf8; animation: pulse 2s infinite; }
-            @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-            .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; margin-top: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); }
-            .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-            button { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 15px; font-weight: bold; font-size: 1em; transition: all 0.3s; }
-            button:hover { background: linear-gradient(135deg, #1d4ed8, #1e40af); box-shadow: 0 0 15px rgba(37,99,235,0.5); }
-            input, select { background: #070a12; border: 1px solid #334155; color: white; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-top: 5px; }
-            .footer { margin-top: 40px; text-align: center; border-top: 1px solid #1e293b; padding-top: 20px; color: #64748b; font-size: 0.85em; }
-            .badge-group { display: flex; justify-content: space-around; margin-top: 10px; padding: 10px; background: #070a12; border-radius: 8px; border: 1px solid #1e293b; font-size: 0.85em; flex-wrap: wrap; gap: 5px; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <div class="brand-title">
-                    <span class="logo-shield">🛡️ K-AURA</span>
-                    <div>
-                        <h2 style="margin: 0; font-size: 1.3em;">QUEMPROMET SaaS ENGINE</h2>
-                        <span class="creator-tag">Arquitectura Intelectual por Dr. Mauro Falcón M.</span>
-                    </div>
-                </div>
-                <div class="status-container">
-                    <span><span class="led led-green"></span> NODE: ONLINE</span>
-                    <span><span class="led led-blue"></span> RPC: POLYGON</span>
-                </div>
-            </div>
+    /* CABECERA TÉCNICA Y ESTADO DE PRUEBA */
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 25px; flex-wrap: wrap; gap: 10px; }
+    .title-block h1 { font-size: 20px; font-weight: 800; }
+    .title-block p { font-size: 12px; color: var(--cyan-accent); font-family: monospace; }
+    
+    .status-pill { background: rgba(0, 212, 178, 0.1); border: 1px solid var(--cyan-accent); color: var(--cyan-accent); padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 
-            <div class="badge-group">
-                <span>🔒 Security & Access Control Active</span>
-                <span>⚡ Real-Time Web3 Sync</span>
-                <span>🎯 Stop Loss: 80% | Take Profit: 100%</span>
-            </div>
+    /* METRICAS KPI COMPARATIVAS */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .kpi-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; }
+    .kpi-label { font-size: 11px; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-value { font-size: 22px; font-weight: 800; margin: 6px 0; }
+    .kpi-sub { font-size: 11px; font-weight: 600; }
+    .text-green { color: var(--green-success); }
+    .text-blue { color: var(--blue-accent); }
+    .text-cyan { color: var(--cyan-accent); }
 
-            <!-- REPRODUCTOR DE YOUTUBE -->
-            <div class="card" style="text-align: center;">
-                <h3 style="margin-top: 0;">🎬 Demostración Visual de Arquitectura K-Aura</h3>
-                <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; border: 1px solid #1e293b;">
-                    <iframe 
-                        src="https://www.youtube.com/embed/1GCOPWzDZSk" 
-                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen>
-                    </iframe>
-                </div>
-                <p style="font-size: 0.85em; color: #94a3b8; margin-top: 10px;">
-                    Demostración conceptual de monitoreo entrópico y control determinista B2B on-chain por el Dr. Mauro Falcón M.
-                </p>
-            </div>
+    /* SECCIÓN DE GRÁFICA COMPARATIVA */
+    .chart-container { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 25px; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .chart-title { font-size: 15px; font-weight: 700; }
 
-            <div class="grid">
-                <div class="card">
-                    <h3>⚡ Calibración Protegida del Motor</h3>
-                    
-                    <label>Clave de Autorización / API Key:</label>
-                    <input type="password" id="apiKey" placeholder="Ingresa tu clave de acceso autorizada">
+    /* TABLA DE AUDITORÍA DE EJECUCIÓN */
+    .table-container { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
+    th { color: var(--text-gray); font-weight: 600; border-bottom: 1px solid var(--border-color); padding: 10px; }
+    td { padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .badge-a { background: rgba(59, 130, 246, 0.2); color: var(--blue-accent); padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
+    .badge-b { background: rgba(0, 212, 178, 0.2); color: var(--cyan-accent); padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
 
-                    <label style="margin-top:15px; display:block;">Red Blockchain Destino:</label>
-                    <select id="net">
-                        <option value="polygon">Polygon Mainnet (POL/MATIC)</option>
-                        <option value="ethereum">Ethereum Mainnet (ETH)</option>
-                        <option value="arbitrum">Arbitrum One (ARB)</option>
-                    </select>
-                    
-                    <label style="margin-top:15px; display:block;">Umbral Stop Loss (%):</label>
-                    <input type="number" id="sl" value="80">
+    /* PANEL DE CONTROL DEL EXPERIMENTO */
+    .control-panel { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+    .btn-action { background: var(--blue-accent); color: #FFF; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; }
+    .btn-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--red-alert); color: var(--red-alert); }
+  </style>
+</head>
+<body>
 
-                    <label style="margin-top:15px; display:block;">Objetivo Take Profit (%):</label>
-                    <input type="number" id="tp" value="100">
+  <header>
+    <div class="title-block">
+      <h1>K-AURA | Validation Engine A/B</h1>
+      <p>Prueba de Concepto: Parámetros Fijos vs. Motor Estocástico Quant/Orb</p>
+    </div>
+    <div class="status-pill">Prueba Activa en Vivo</div>
+  </header>
 
-                    <button onclick="applyConfig()">Ejecutar Recalibración Autorizada</button>
-                    <p id="msg" style="font-weight: 500; font-size: 0.9em; margin-top: 10px;"></p>
-                </div>
+  <!-- TARJETAS DE MÉTRICAS KPI COMPARA ATIVAS -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Modelo Base (Fijo / Control)</div>
+      <div class="kpi-value text-blue">+$1,450.00 USD</div>
+      <div class="kpi-sub text-green">✓ Retorno Real Protegido</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Modelo Dinámico (Quant / Orb)</div>
+      <div class="kpi-value text-cyan">+$1,620.00 USD</div>
+      <div class="kpi-sub text-cyan">▲ +11.7% Rendimiento Bruto</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Fricción de Red (Fuerza de Gas)</div>
+      <div class="kpi-value text-green">-$140.00 USD</div>
+      <div class="kpi-sub text-green">Deducido por Filtro CEET</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Diferencial Neto A/B</div>
+      <div class="kpi-value text-green">+$30.00 USD</div>
+      <div class="kpi-sub text-green">Margen Ganador Actual: Modelo B</div>
+    </div>
+  </div>
 
-                <div class="card">
-                    <h3>📈 Monitoreo Entrópico On-Chain</h3>
-                    <canvas id="chart" height="180"></canvas>
-                </div>
-            </div>
+  <!-- VISUALIZADOR GRÁFICO COMPARATIVO EN TIEMPO REAL -->
+  <div class="chart-container">
+    <div class="chart-header">
+      <div class="chart-title">Curva de Rendimiento Neto Acumulado (60 Minutos)</div>
+    </div>
+    <canvas id="abChart" height="100"></canvas>
+  </div>
 
-            <div class="footer">
-                <p><strong>© QUEMPROMET / KEMPROMED ECOSYSTEM. Todos los derechos reservados.</strong></p>
-                <p>Dirección y Arquitectura Tecnológica por el <strong>Dr. Mauro Falcón M.</strong> | Propiedad Intelectual protegida. Infraestructura desplegada en Render & GCP Gemini AI Studio.</p>
-            </div>
-        </div>
+  <!-- REGISTRO DE AUDITORÍA OPERATIVA EN VIVO -->
+  <div class="table-container">
+    <div class="chart-title" style="margin-bottom: 12px;">Auditoría Transaccional de Validación</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Estrategia</th>
+          <th>Costo Ejecución (CEET)</th>
+          <th>Stop-Loss / Take-Profit</th>
+          <th>Estado Operativo</th>
+          <th>Resultado Neto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>16:40:12</td>
+          <td><span class="badge-a">RAMA A (BASE)</span></td>
+          <td>$1.20 USD</td>
+          <td>TP +15% / SL -5% (Fijo)</td>
+          <td><span class="text-green">Ejecutado</span></td>
+          <td class="text-green">+$45.00 USD</td>
+        </tr>
+        <tr>
+          <td>16:41:05</td>
+          <td><span class="badge-b">RAMA B (QUANT)</span></td>
+          <td>$3.50 USD (Priority)</td>
+          <td>TP +22% / SL -3.2% (Dinamico)</td>
+          <td><span class="text-green">Ejecutado (Orb +60%)</span></td>
+          <td class="text-green">+$62.00 USD</td>
+        </tr>
+        <tr>
+          <td>16:43:20</td>
+          <td><span class="badge-b">RAMA B (QUANT)</span></td>
+          <td>$8.90 USD (Alta Red)</td>
+          <td>Ajuste Cancelado</td>
+          <td><span style="color: var(--text-gray);">Abortado por Filtro Quant</span></td>
+          <td>$0.00 USD (Riesgo Evitado)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
-        <script>
-            const ctx = document.getElementById('chart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['12:00', '12:05', '12:10', '12:15', '12:20'],
-                    datasets: [{ 
-                        label: 'Balance On-Chain (USD)', 
-                        data: [1000, 1020, 990, 1050, 1100], 
-                        borderColor: '#38bdf8', 
-                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                        fill: true,
-                        tension: 0.3 
-                    }]
-                },
-                options: { responsive: true, plugins: { legend: { labels: { color: '#94a3b8' } } } }
-            });
+  <!-- PANEL DE DECISIÓN DE INGENIERÍA -->
+  <div class="control-panel">
+    <button class="btn-action" onclick="alert('Simulación actualizada con nuevo bloque de datos.')">Simular Siguiente Bloque (60 min)</button>
+    <button class="btn-action btn-danger" onclick="alert('Estrategia Dinámica descartada. Retornando 100% a Parámetros Fijos Base.')">Descartar Modelo B (Retener Solo Base)</button>
+  </div>
 
-            async function applyConfig() {
-                const key = document.getElementById('apiKey').value;
-                const msg = document.getElementById('msg');
+  <script>
+    // Configuración de Gráfica de Comparación de Rendimiento
+    const ctx = document.getElementById('abChart').getContext('2d');
+    const abChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['10m', '20m', '30m', '40m', '50m', '60m'],
+        datasets: [
+          {
+            label: 'Modelo Base Fijo (Control Real)',
+            data: [200, 450, 700, 950, 1200, 1450],
+            borderColor: '#3B82F6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderWidth: 2,
+            tension: 0.3
+          },
+          {
+            label: 'Modelo Dinámico Quant/Orb (Prueba)',
+            data: [180, 500, 820, 1100, 1350, 1620],
+            borderColor: '#00D4B2',
+            backgroundColor: 'rgba(0, 212, 178, 0.1)',
+            borderWidth: 2,
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: '#94A3B8', font: { size: 12 } } }
+        },
+        scales: {
+          x: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+          y: { ticks: { color: '#94A3B8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+        }
+      }
+    });
+  </script>
 
-                if (!key) {
-                    msg.style.color = '#ef4444';
-                    msg.innerText = '❌ Error: Debes ingresar tu Clave de Acceso para autorizar la operación.';
-                    return;
-                }
-
-                try {
-                    const res = await fetch('/api/v1/engine/update-config', {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'X-API-Key': key 
-                        },
-                        body: JSON.stringify({ stop_loss_pct: parseFloat(sl.value), take_profit_pct: parseFloat(tp.value), network: net.value })
-                    });
-                    
-                    const data = await res.json();
-                    
-                    if (res.ok) {
-                        msg.style.color = '#38bdf8';
-                        msg.innerText = data.message;
-                    } else {
-                        msg.style.color = '#ef4444';
-                        msg.innerText = '❌ ' + (data.detail || 'Acceso denegado.');
-                    }
-                } catch (e) {
-                    msg.style.color = '#ef4444';
-                    msg.innerText = '❌ Error de comunicación con el servidor.';
-                }
-            }
-        </script>
-    </body>
-    </html>
-    """
+</body>
+</html>
