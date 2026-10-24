@@ -1,187 +1,804 @@
+```html
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>K-AURA | Core Engine & Interactive SaaS Control</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root {
-      --bg-dark: #070B14;
-      --card-bg: #0D1527;
-      --border-color: #1E293B;
-      --cyan-accent: #00D4B2;
-      --blue-accent: #3B82F6;
-      --green-success: #10B981;
-      --red-alert: #EF4444;
-      --text-white: #FFFFFF;
-      --text-gray: #94A3B8;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-Engine v2.1 // K-Aura Telemetry Terminal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg-dark); color: var(--text-white); padding: 20px 15px; line-height: 1.5; }
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        display: ['Orbitron', 'sans-serif'],
+                    },
+                    colors: {
+                        cyber: {
+                            bg: '#080b10',
+                            card: '#0f141c',
+                            border: '#1f293d',
+                            accent: '#00f0ff',
+                            neon: '#39ff14',
+                            warning: '#ffb703',
+                            danger: '#ff0055',
+                            purple: '#8a2be2',
+                            text: '#c0caf5',
+                            muted: '#414868'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #080b10;
+            color: #c0caf5;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.05) 0%, transparent 70%),
+                linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+        }
 
-    header { border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; }
-    .header-tag { color: var(--cyan-accent); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
-    .main-title { font-size: 22px; font-weight: 800; }
+        .glow-cyan { box-shadow: 0 0 15px rgba(0, 240, 255, 0.25); }
+        .glow-neon { box-shadow: 0 0 15px rgba(57, 255, 20, 0.25); }
+        .glow-danger { box-shadow: 0 0 15px rgba(ff, 0, 85, 0.25); }
+        
+        .glow-text-cyan { text-shadow: 0 0 8px rgba(0, 240, 255, 0.6); }
+        .glow-text-neon { text-shadow: 0 0 8px rgba(57, 255, 20, 0.6); }
+        .glow-text-danger { text-shadow: 0 0 8px rgba(255, 0, 85, 0.6); }
 
-    .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
-    .card-title { font-size: 15px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; color: var(--cyan-accent); }
+        .scanline {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.3) 50%,
+                rgba(0, 0, 0, 0.3)
+            );
+            background-size: 100% 4px;
+        }
 
-    /* CONSOLA DE CALIBRACIÓN Y LICENCIAMIENTO B2B */
-    .form-group { margin-bottom: 14px; }
-    .form-label { display: block; font-size: 12px; color: var(--text-gray); margin-bottom: 6px; font-weight: 600; }
-    .form-input, .form-select { width: 100%; background: #070B14; border: 1px solid var(--border-color); color: #FFF; padding: 10px; border-radius: 8px; font-size: 13px; outline: none; }
-    .form-input:focus { border-color: var(--cyan-accent); }
-
-    .range-container { display: flex; align-items: center; gap: 12px; }
-    .range-slider { flex: 1; accent-color: var(--cyan-accent); }
-    .range-val { font-family: monospace; font-weight: 700; font-size: 14px; width: 50px; text-align: right; color: var(--cyan-accent); }
-
-    .btn-submit { width: 100%; background: var(--blue-accent); color: #FFF; font-weight: 700; font-size: 13px; padding: 12px; border-radius: 8px; border: none; cursor: pointer; margin-top: 10px; }
-    .btn-submit:hover { opacity: 0.9; }
-
-    /* METRICAS KPI */
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
-    .kpi-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; }
-    .kpi-label { font-size: 10px; color: var(--text-gray); text-transform: uppercase; }
-    .kpi-value { font-size: 20px; font-weight: 800; margin: 4px 0; }
-    .text-green { color: var(--green-success); }
-    .text-cyan { color: var(--cyan-accent); }
-    .text-blue { color: var(--blue-accent); }
-
-    /* TABLA Y GRÁFICA */
-    .table-container { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
-    th { color: var(--text-gray); font-weight: 600; border-bottom: 1px solid var(--border-color); padding: 8px; }
-    td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-  </style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #080b10; }
+        ::-webkit-scrollbar-thumb { background: #1f293d; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+    </style>
 </head>
-<body>
+<body class="font-mono text-sm leading-relaxed antialiased min-h-screen flex flex-col justify-between">
 
-  <header>
-    <div class="header-tag">DR. MAURO ERNESTO FALCÓN MUÑOZ | PROPIEDAD INTELECTUAL</div>
-    <h1 class="main-title">K-AURA — Motor de Control & Licenciamiento B2B</h1>
-  </header>
+    <!-- TOP HEADER / NAVBAR -->
+    <header class="border-b border-cyber-border bg-cyber-card/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-cyber-accent/10 border border-cyber-accent/30 rounded-lg text-cyber-accent">
+                    <i data-lucide="cpu" class="w-6 h-6 animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-bold text-lg md:text-xl text-white tracking-wider flex items-center gap-2">
+                        Q-ENGINE <span class="text-xs px-2 py-0.5 rounded bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/40 font-mono">v2.1 // K-AURA</span>
+                    </h1>
+                    <p class="text-xs text-cyber-muted">Quant Thermodynamic & Chaos Telemetry Suite</p>
+                </div>
+            </div>
 
-  <!-- 1. GATILLOS INTERACTIVOS DE LICENCIAMIENTO B2B (MÓDULO COMERCIAL) -->
-  <div class="card">
-    <div class="card-title">⚡ Calibración Protegida del Motor (Gatillos Programables)</div>
-    
-    <div class="form-group">
-      <label class="form-label">Clave de Autorización / API Key Licenciada:</label>
-      <input type="password" class="form-input" value="K-AURA-PROD-883921X" placeholder="Ingresa tu API Key">
+            <!-- CONTROLS & STATUS -->
+            <div class="flex items-center flex-wrap gap-3">
+                <!-- Mode Switcher -->
+                <div class="flex items-center bg-cyber-bg border border-cyber-border rounded-lg p-1">
+                    <button id="btn-live" onclick="setMode('LIVE')" class="px-3 py-1 text-xs rounded-md transition-all font-semibold flex items-center gap-1 text-cyber-muted hover:text-white">
+                        <i data-lucide="radio" class="w-3.5 h-3.5"></i> LIVE DATA
+                    </button>
+                    <button id="btn-demo" onclick="setMode('DEMO')" class="px-3 py-1 text-xs rounded-md transition-all font-semibold flex items-center gap-1 bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/40">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> DEMO ENGINE
+                    </button>
+                </div>
+
+                <!-- Settings / URL Toggle -->
+                <button onclick="toggleSettingsModal()" class="p-2 border border-cyber-border rounded-lg text-cyber-muted hover:text-white hover:border-cyber-accent transition-colors" title="Configuración de Feed">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Ping / Pulse Indicator -->
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-cyber-bg border border-cyber-border rounded-lg text-xs">
+                    <span id="ping-led" class="w-2.5 h-2.5 rounded-full bg-cyber-neon animate-ping"></span>
+                    <span id="ping-text" class="text-cyber-neon font-bold">ONLINE</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full space-y-6">
+
+        <!-- TOP BAR: SYSTEM STATUS & DECISION BANNER -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- System Health -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 flex items-center justify-between relative overflow-hidden">
+                <div class="space-y-1">
+                    <div class="text-xs text-cyber-muted font-semibold uppercase tracking-wider">Estado del Sistema</div>
+                    <div class="flex items-center gap-3">
+                        <span id="system-status-led" class="w-3.5 h-3.5 rounded-full bg-cyber-neon glow-neon"></span>
+                        <span id="system-status" class="font-display text-xl text-white font-bold tracking-wide">ACTIVE</span>
+                    </div>
+                </div>
+                <div class="text-right border-l border-cyber-border pl-4">
+                    <div class="text-xs text-cyber-muted">Latencia Feed</div>
+                    <div id="feed-latency" class="text-sm font-bold text-cyber-accent">24 ms</div>
+                </div>
+            </div>
+
+            <!-- Algorithmic Decision -->
+            <div id="decision-card" class="bg-cyber-card border border-cyber-border rounded-xl p-4 flex items-center justify-between relative overflow-hidden md:col-span-2">
+                <div>
+                    <div class="text-xs text-cyber-muted font-semibold uppercase tracking-wider flex items-center gap-2">
+                        Decisión Algorítmica Relevada
+                        <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-cyber-accent"></i>
+                    </div>
+                    <div id="decision-badge" class="font-display text-2xl font-black tracking-widest text-cyber-neon glow-text-neon mt-1">
+                        SIMULATION_BUY
+                    </div>
+                </div>
+                <div class="hidden sm:block text-right">
+                    <div class="text-xs text-cyber-muted">Último Timestamp</div>
+                    <div id="last-timestamp" class="text-xs font-mono text-white/80 mt-1">--:--:-- Z</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN METRICS GRID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            <!-- METRIC 1: Shannon Entropy -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 flex flex-col justify-between relative">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-cyber-muted font-semibold">ENTROPÍA DE SHANNON</span>
+                        <i data-lucide="activity" class="w-4 h-4 text-cyber-accent"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="entropy-val" class="font-display text-3xl font-bold text-white">0.5842</span>
+                        <span id="entropy-status" class="text-xs text-cyber-neon font-semibold">ÓPTIMO</span>
+                    </div>
+                </div>
+                <!-- Gauge Bar -->
+                <div class="mt-4 space-y-1">
+                    <div class="w-full h-2 bg-cyber-bg rounded-full overflow-hidden p-0.5 border border-cyber-border">
+                        <div id="entropy-bar" class="h-full bg-cyber-accent rounded-full transition-all duration-500" style="width: 58%;"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-cyber-muted">
+                        <span>0.0 (Orden)</span>
+                        <span class="text-cyber-warning">0.85 (Caos)</span>
+                        <span>1.0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- METRIC 2: Orderbook Imbalance & Pressure -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-cyber-muted font-semibold">PRESIÓN DE LIBRO [-1, +1]</span>
+                        <i data-lucide="scale" class="w-4 h-4 text-cyber-accent"></i>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="pressure-val" class="font-display text-3xl font-bold text-cyber-neon">+0.320</span>
+                        <span id="pressure-bias" class="text-xs text-cyber-neon font-semibold">BUY BIAS</span>
+                    </div>
+                </div>
+                <!-- Bid / Ask Slider -->
+                <div class="mt-4 space-y-1">
+                    <div class="relative w-full h-3 bg-cyber-bg rounded-full overflow-hidden border border-cyber-border flex">
+                        <div id="ask-pressure-bar" class="h-full bg-cyber-danger transition-all duration-300" style="width: 34%;"></div>
+                        <div class="h-full bg-cyber-border w-1 z-10"></div>
+                        <div id="bid-pressure-bar" class="h-full bg-cyber-neon transition-all duration-300" style="width: 66%;"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-cyber-muted font-semibold">
+                        <span class="text-cyber-danger">ASK (VENTA)</span>
+                        <span class="text-cyber-neon">BID (COMPRA)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- METRIC 3: Temperature & Friction -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs text-cyber-muted font-semibold">TEMPERATURA & FRICCIÓN</span>
+                        <i data-lucide="thermometer" class="w-4 h-4 text-cyber-accent"></i>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <div>
+                            <div class="text-[10px] text-cyber-muted">Temperatura</div>
+                            <div id="temp-val" class="font-display text-xl font-bold text-white">4.1820</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-cyber-muted">Fricción Total</div>
+                            <div id="friction-val" class="font-display text-xl font-bold text-cyber-warning">0.054%</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-cyber-border/50 text-[11px] text-cyber-muted flex justify-between">
+                    <span>Spread Impact:</span>
+                    <span id="spread-val" class="text-white font-mono">0.0015%</span>
+                </div>
+            </div>
+
+            <!-- METRIC 4: Capital & Dynamic Stop -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs text-cyber-muted font-semibold">CAPITAL & RISK STOP</span>
+                        <i data-lucide="wallet" class="w-4 h-4 text-cyber-accent"></i>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <div>
+                            <div class="text-[10px] text-cyber-muted">Capital Total</div>
+                            <div id="capital-val" class="font-display text-xl font-bold text-cyber-accent">$2,540.80</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-cyber-muted">PRNG Percentil</div>
+                            <div id="prng-val" class="font-display text-xl font-bold text-cyber-neon">88.5%</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-cyber-border/50 text-[11px] text-cyber-muted flex justify-between">
+                    <span>Stop Dinámico (ATR):</span>
+                    <span id="stop-val" class="text-cyber-danger font-mono font-bold">$554.20</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- CHART 1: Real-time Entropy & Temperature Timeline -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-5 lg:col-span-2 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-display text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="line-chart" class="w-4 h-4 text-cyber-accent"></i>
+                            DINÁMICA DE ENTROPÍA Y TEMPERATURA
+                        </h3>
+                        <p class="text-xs text-cyber-muted">Monitoreo termodinámico continuo en ventana rodante</p>
+                    </div>
+                    <span class="text-xs px-2 py-1 bg-cyber-bg border border-cyber-border rounded text-cyber-accent">
+                        Últimas 30 Muestras
+                    </span>
+                </div>
+                <div class="relative flex-grow h-64 md:h-80 w-full">
+                    <canvas id="telemetryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- CHART 2: Monte Carlo Simulation Pathways -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-5 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="font-display text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="git-fork" class="w-4 h-4 text-cyber-accent"></i>
+                            PRNG MONTE CARLO
+                        </h3>
+                        <p class="text-xs text-cyber-muted">1,000 Caminos Simulados (Proyección 15 Ticks)</p>
+                    </div>
+                </div>
+                <div class="relative flex-grow h-64 md:h-80 w-full">
+                    <canvas id="monteCarloChart"></canvas>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
+                    <div class="bg-cyber-bg border border-cyber-border p-2 rounded">
+                        <span class="text-cyber-muted block text-[10px]">PRECIO BASE</span>
+                        <span id="btc-price" class="text-white font-bold font-mono">$65,240.50</span>
+                    </div>
+                    <div class="bg-cyber-bg border border-cyber-border p-2 rounded">
+                        <span class="text-cyber-muted block text-[10px]">ALFA PERCENTIL</span>
+                        <span id="monte-percentile" class="text-cyber-neon font-bold font-mono">88.5% PASS</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RECENT ACTIVITY LOG -->
+        <div class="bg-cyber-card border border-cyber-border rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-display text-xs font-bold text-white flex items-center gap-2">
+                    <i data-lucide="terminal" class="w-4 h-4 text-cyber-accent"></i>
+                    BITÁCORA FORENSE DE TELEMETRÍA (EVENT LOG)
+                </h3>
+                <button onclick="clearLog()" class="text-[11px] text-cyber-muted hover:text-white transition-colors">Limpiar Log</button>
+            </div>
+            <div id="log-container" class="bg-cyber-bg border border-cyber-border rounded-lg p-3 h-36 overflow-y-auto font-mono text-xs space-y-1.5">
+                <!-- Log entries dynamically inserted here -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-cyber-border bg-cyber-card/40 py-4 px-6 text-center text-xs text-cyber-muted">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div>Q-Engine v2.1 // Algorithmic Quantitative Sandbox Engine</div>
+            <div>Powered by NumPy PCG64 & Shannon Entropy Vectorization</div>
+        </div>
+    </footer>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-cyber-card border border-cyber-border rounded-xl max-w-md w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-cyber-border pb-3">
+                <h3 class="font-display font-bold text-white flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-cyber-accent"></i>
+                    Configuración de Feed
+                </h3>
+                <button onclick="toggleSettingsModal()" class="text-cyber-muted hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-cyber-muted block mb-1">URL de `data.json` Endpoint</label>
+                    <input id="input-data-url" type="text" value="data.json" class="w-full bg-cyber-bg border border-cyber-border rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-accent font-mono" placeholder="http://localhost:8000/data.json">
+                </div>
+                <div>
+                    <label class="text-xs text-cyber-muted block mb-1">Intervalo de Refresco (ms)</label>
+                    <input id="input-refresh-rate" type="number" value="3000" min="1000" step="500" class="w-full bg-cyber-bg border border-cyber-border rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-cyber-accent font-mono">
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-end gap-2">
+                <button onclick="toggleSettingsModal()" class="px-4 py-2 border border-cyber-border rounded text-xs text-cyber-muted hover:text-white">Cancelar</button>
+                <button onclick="saveSettings()" class="px-4 py-2 bg-cyber-accent/20 border border-cyber-accent text-cyber-accent hover:bg-cyber-accent/30 rounded text-xs font-bold">Guardar Cambios</button>
+            </div>
+        </div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Red Blockchain Destino:</label>
-      <select class="form-select">
-        <option>Polygon Mainnet (POL/MATIC)</option>
-        <option>Solana Mainnet (SOL / PumpSwap Node)</option>
-        <option>Ethereum Mainnet (ETH)</option>
-      </select>
-    </div>
+    <!-- DASHBOARD LOGIC / SCRIPT -->
+    <script>
+        // CONFIGURATION & STATE
+        let mode = 'DEMO'; // 'LIVE' or 'DEMO'
+        let dataUrl = 'data.json';
+        let refreshIntervalMs = 3000;
+        let timerId = null;
 
-    <div class="form-group">
-      <label class="form-label">Umbral Stop Loss Dinámico (% Límite de Pérdida Protegida):</label>
-      <div class="range-container">
-        <input type="range" class="range-slider" min="1" max="30" value="8" id="slRange" oninput="document.getElementById('slVal').innerText = this.value + '%'">
-        <span class="range-val" id="slVal">8%</span>
-      </div>
-    </div>
+        // Historical Data Buffer for Charts
+        const maxHistory = 30;
+        const historyData = {
+            timestamps: [],
+            entropy: [],
+            temperature: []
+        };
 
-    <div class="form-group">
-      <label class="form-label">Objetivo Take Profit (% Margen Objetivo Comercial):</label>
-      <div class="range-container">
-        <input type="range" class="range-slider" min="5" max="200" value="25" id="tpRange" oninput="document.getElementById('tpVal').innerText = this.value + '%'">
-        <span class="range-val" id="tpVal">25%</span>
-      </div>
-    </div>
+        // Base Simulated Price for Monte Carlo
+        let simPrice = 65000.0;
+        let simCapital = 2500.0;
 
-    <button class="btn-submit" onclick="actualizarGatillos()">Ejecutar & Programar Gatillos en Nodo Real</button>
-  </div>
+        // CHARTS INSTANCES
+        let telemetryChart = null;
+        let monteCarloChart = null;
 
-  <!-- 2. TARJETAS COMPARATIVAS DE PRUEBA A/B -->
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div class="kpi-label">Estrategia Base (Gatillos Fijos)</div>
-      <div class="kpi-value text-blue">+$1,450 USD</div>
-      <div style="font-size: 10px; color: var(--green-success);">✓ Control de Riesgo Nativo</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Estrategia Dinámica (Quant/Orb)</div>
-      <div class="kpi-value text-cyan">+$1,620 USD</div>
-      <div style="font-size: 10px; color: var(--cyan-accent);">▲ Modo Estocástico Evaluación</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">Fricción Fondeo/Gas (CEET)</div>
-      <div class="kpi-value text-green">-$140 USD</div>
-      <div style="font-size: 10px; color: var(--text-gray);">Descuento Automático</div>
-    </div>
-  </div>
+        // INITIALIZATION
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initCharts();
+            startTelemetry();
+        });
 
-  <!-- 3. GRÁFICA INTERACTIVA Y AUDITORÍA EN VIVO -->
-  <div class="card">
-    <div class="card-title">📈 Monitoreo Comparativo en Tiempo Real (60 Minutos)</div>
-    <canvas id="abChart" height="110"></canvas>
-  </div>
+        function toggleSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.toggle('hidden');
+        }
 
-  <div class="card">
-    <div class="card-title">📋 Registro Transaccional de Gatillos Programados</div>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Timestamp</th>
-            <th>Red</th>
-            <th>Gatillo Programado</th>
-            <th>Fricción (CEET)</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody id="tablaAuditoria">
-          <tr>
-            <td>02:45:10</td>
-            <td>Polygon</td>
-            <td>TP +25% / SL -8%</td>
-            <td>$1.20 USD</td>
-            <td><span class="text-green">Gatillo Activo</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+        function saveSettings() {
+            dataUrl = document.getElementById('input-data-url').value;
+            refreshIntervalMs = parseInt(document.getElementById('input-refresh-rate').value) || 3000;
+            toggleSettingsModal();
+            addLog(`Configuración actualizada: Endpoint=${dataUrl}, Intervalo=${refreshIntervalMs}ms`);
+            startTelemetry();
+        }
 
-  <script>
-    function actualizarGatillos() {
-      const sl = document.getElementById('slRange').value;
-      const tp = document.getElementById('tpRange').value;
-      alert(`Gatillos K-AURA reprogramados exitosamente:\n- Stop Loss: -${sl}%\n- Take Profit: +${tp}%\nNodo actualizado en la red seleccionada.`);
-      
-      const tabla = document.getElementById('tablaAuditoria');
-      const nuevaFila = `<tr>
-        <td>${new Date().toLocaleTimeString()}</td>
-        <td>Polygon</td>
-        <td>TP +${tp}% / SL -${sl}%</td>
-        <td>$1.50 USD</td>
-        <td><span class="text-green">Gatillo Activo</span></td>
-      </tr>`;
-      tabla.innerHTML = nuevaFila + tabla.innerHTML;
-    }
+        function setMode(newMode) {
+            mode = newMode;
+            const btnLive = document.getElementById('btn-live');
+            const btnDemo = document.getElementById('btn-demo');
 
-    const ctx = document.getElementById('abChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: ['10m', '20m', '30m', '40m', '50m', '60m'],
-        datasets: [
-          { label: 'Estrategia Fija (Control)', data: [200, 450, 700, 950, 1200, 1450], borderColor: '#3B82F6', borderWidth: 2 },
-          { label: 'Estrategia Quant (Prueba)', data: [180, 500, 820, 1100, 1350, 1620], borderColor: '#00D4B2', borderWidth: 2 }
-        ]
-      },
-      options: { responsive: true, plugins: { legend: { labels: { color: '#94A3B8' } } } }
-    });
-  </script>
+            if (mode === 'LIVE') {
+                btnLive.className = "px-3 py-1 text-xs rounded-md transition-all font-semibold flex items-center gap-1 bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/40";
+                btnDemo.className = "px-3 py-1 text-xs rounded-md transition-all font-semibold flex items-center gap-1 text-cyber-muted hover:text-white";
+                addLog('Modo cambiado a LIVE FEED');
+            } else {
+                btnDemo.className = "px-3 py-1 text-xs rounded-md transition-all font-semibold flex items-center gap-1 bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/40";
+                btnLive.className = "px-3 py-1 text-xs rounded-md transition-all font-semibold flex items-center gap-1 text-cyber-muted hover:text-white";
+                addLog('Modo cambiado a MOTOR DEMO SIMULADO');
+            }
+            fetchData();
+        }
 
+        function startTelemetry() {
+            if (timerId) clearInterval(timerId);
+            fetchData();
+            timerId = setInterval(fetchData, refreshIntervalMs);
+        }
+
+        // FETCH DATA (LIVE OR DEMO)
+        async function fetchData() {
+            const startTime = performance.now();
+            let payload = null;
+
+            if (mode === 'LIVE') {
+                try {
+                    const response = await fetch(`${dataUrl}?t=${Date.now()}`, { cache: "no-store" });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    payload = await response.json();
+                    
+                    const latency = Math.round(performance.now() - startTime);
+                    document.getElementById('feed-latency').innerText = `${latency} ms`;
+                    updateConnectionStatus(true);
+                } catch (err) {
+                    addLog(`Error en Live Feed: ${err.message}. Alternando temporalmente a simulación.`);
+                    updateConnectionStatus(false);
+                    payload = generateDemoPayload();
+                }
+            } else {
+                // Demo Mode Payload Generation
+                payload = generateDemoPayload();
+                const latency = Math.round(15 + Math.random() * 20);
+                document.getElementById('feed-latency').innerText = `${latency} ms`;
+                updateConnectionStatus(true);
+            }
+
+            if (payload) {
+                renderTelemetry(payload);
+            }
+        }
+
+        // DEMO PAYLOAD GENERATOR
+        function generateDemoPayload() {
+            simPrice += (Math.random() - 0.49) * 25.0;
+            const entropy = Math.max(0.1, Math.min(0.95, 0.5 + (Math.random() - 0.5) * 0.4));
+            const imbalance = Math.max(-0.95, Math.min(0.95, (Math.random() - 0.48) * 1.2));
+            const temperature = parseFloat((Math.random() * 8.0 + 1.2).toFixed(4));
+            const friction = parseFloat((Math.random() * 0.08 + 0.02).toFixed(4));
+            const prngPercentile = parseFloat((Math.random() * 35 + 65).toFixed(2));
+            
+            let status = "ACTIVE";
+            let decision = "HOLD";
+
+            if (entropy > 0.82) {
+                decision = "ABORT_CHAOS";
+            } else if (entropy >= 0.45 && entropy <= 0.75 && prngPercentile >= 80.0 && friction < 0.10) {
+                decision = "SIMULATION_BUY";
+                simCapital += Math.random() * 12.0;
+            } else {
+                decision = "HOLD";
+            }
+
+            return {
+                timestamp: new Date().toISOString(),
+                status: status,
+                metrics: {
+                    price: parseFloat(simPrice.toFixed(2)),
+                    entropy: parseFloat(entropy.toFixed(4)),
+                    temperature: temperature,
+                    pressure: parseFloat(imbalance.toFixed(4)),
+                    friction_perc: friction,
+                    prng_percentile: prngPercentile,
+                    dynamic_stop: parseFloat((simPrice * 0.012).toFixed(2)),
+                    capital: parseFloat(simCapital.toFixed(2))
+                },
+                decision: decision
+            };
+        }
+
+        // UPDATE UI WITH DATA
+        function renderTelemetry(data) {
+            const m = data.metrics;
+
+            // Timestamp
+            const timeStr = new Date(data.timestamp).toLocaleTimeString();
+            document.getElementById('last-timestamp').innerText = `${timeStr} Z`;
+
+            // Status
+            const statusEl = document.getElementById('system-status');
+            const statusLed = document.getElementById('system-status-led');
+            statusEl.innerText = data.status;
+
+            if (data.status === 'ACTIVE') {
+                statusLed.className = "w-3.5 h-3.5 rounded-full bg-cyber-neon glow-neon";
+                statusEl.className = "font-display text-xl text-white font-bold tracking-wide";
+            } else {
+                statusLed.className = "w-3.5 h-3.5 rounded-full bg-cyber-warning glow-warning";
+                statusEl.className = "font-display text-xl text-cyber-warning font-bold tracking-wide";
+            }
+
+            // Decision Badge Styling
+            const decBadge = document.getElementById('decision-badge');
+            decBadge.innerText = data.decision;
+            
+            if (data.decision === 'SIMULATION_BUY') {
+                decBadge.className = "font-display text-2xl font-black tracking-widest text-cyber-neon glow-text-neon mt-1";
+            } else if (data.decision === 'ABORT_CHAOS') {
+                decBadge.className = "font-display text-2xl font-black tracking-widest text-cyber-danger glow-text-danger mt-1 animate-pulse";
+            } else {
+                decBadge.className = "font-display text-2xl font-black tracking-widest text-cyber-muted mt-1";
+            }
+
+            // Entropy Metric & Bar
+            document.getElementById('entropy-val').innerText = m.entropy.toFixed(4);
+            const entropyBar = document.getElementById('entropy-bar');
+            const entropyPct = Math.min(100, Math.max(0, m.entropy * 100));
+            entropyBar.style.width = `${entropyPct}%`;
+
+            const entropyStatus = document.getElementById('entropy-status');
+            if (m.entropy > 0.85) {
+                entropyBar.className = "h-full bg-cyber-danger rounded-full transition-all duration-500";
+                entropyStatus.innerText = "ALERTA CAOS";
+                entropyStatus.className = "text-xs text-cyber-danger font-bold animate-pulse";
+            } else if (m.entropy < 0.35) {
+                entropyBar.className = "h-full bg-cyber-accent rounded-full transition-all duration-500";
+                entropyStatus.innerText = "RIGIDO";
+                entropyStatus.className = "text-xs text-cyber-accent font-semibold";
+            } else {
+                entropyBar.className = "h-full bg-cyber-neon rounded-full transition-all duration-500";
+                entropyStatus.innerText = "ÓPTIMO";
+                entropyStatus.className = "text-xs text-cyber-neon font-semibold";
+            }
+
+            // Pressure & Imbalance Slider
+            const pressVal = document.getElementById('pressure-val');
+            const pressBias = document.getElementById('pressure-bias');
+            const askBar = document.getElementById('ask-pressure-bar');
+            const bidBar = document.getElementById('bid-pressure-bar');
+
+            pressVal.innerText = (m.pressure >= 0 ? "+" : "") + m.pressure.toFixed(3);
+            
+            // Map [-1, 1] to [0%, 100%]
+            const bidRatio = ((m.pressure + 1) / 2) * 100;
+            const askRatio = 100 - bidRatio;
+
+            askBar.style.width = `${askRatio}%`;
+            bidBar.style.width = `${bidRatio}%`;
+
+            if (m.pressure > 0.1) {
+                pressVal.className = "font-display text-3xl font-bold text-cyber-neon";
+                pressBias.innerText = "BUY BIAS";
+                pressBias.className = "text-xs text-cyber-neon font-semibold";
+            } else if (m.pressure < -0.1) {
+                pressVal.className = "font-display text-3xl font-bold text-cyber-danger";
+                pressBias.innerText = "SELL BIAS";
+                pressBias.className = "text-xs text-cyber-danger font-semibold";
+            } else {
+                pressVal.className = "font-display text-3xl font-bold text-white";
+                pressBias.innerText = "NEUTRAL";
+                pressBias.className = "text-xs text-cyber-muted font-semibold";
+            }
+
+            // Temperature & Friction
+            document.getElementById('temp-val').innerText = m.temperature.toFixed(4);
+            document.getElementById('friction-val').innerText = `${m.friction_perc.toFixed(3)}%`;
+
+            // Capital & Dynamic Stop
+            document.getElementById('capital-val').innerText = `$${m.capital.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            document.getElementById('prng-val').innerText = `${m.prng_percentile.toFixed(1)}%`;
+            document.getElementById('stop-val').innerText = `$${m.dynamic_stop.toFixed(2)}`;
+
+            if (m.price) {
+                document.getElementById('btc-price').innerText = `$${m.price.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            }
+
+            // Update Charts
+            updateTelemetryChart(timeStr, m.entropy, m.temperature);
+            updateMonteCarloChart(m.price || simPrice, m.prng_percentile);
+
+            addLog(`Telemetry update [${data.decision}] Entropy: ${m.entropy} | Imbalance: ${m.pressure}`);
+        }
+
+        // CHARTS MANAGEMENT
+        function initCharts() {
+            // Chart 1: Telemetry Timeline
+            const ctx1 = document.getElementById('telemetryChart').getContext('2d');
+            telemetryChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Entropía (Shannon)',
+                            data: [],
+                            borderColor: '#00f0ff',
+                            backgroundColor: 'rgba(0, 240, 255, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Temperatura (Vol x Vol)',
+                            data: [],
+                            borderColor: '#ffb703',
+                            borderWidth: 2,
+                            borderDash: [4, 4],
+                            fill: false,
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { color: '#1f293d' },
+                            ticks: { color: '#414868', font: { family: 'JetBrains Mono', size: 10 } }
+                        },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            min: 0,
+                            max: 1,
+                            grid: { color: '#1f293d' },
+                            ticks: { color: '#00f0ff', font: { family: 'JetBrains Mono', size: 10 } }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#ffb703', font: { family: 'JetBrains Mono', size: 10 } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#c0caf5', font: { family: 'JetBrains Mono', size: 11 } }
+                        }
+                    }
+                }
+            });
+
+            // Chart 2: Monte Carlo Simulated Paths
+            const ctx2 = document.getElementById('monteCarloChart').getContext('2d');
+            
+            // Initial Empty Paths
+            telemetryChart.update();
+            renderMonteCarloPaths(simPrice);
+        }
+
+        function updateTelemetryChart(timestamp, entropy, temperature) {
+            if (!telemetryChart) return;
+
+            historyData.timestamps.push(timestamp);
+            historyData.entropy.push(entropy);
+            historyData.temperature.push(temperature);
+
+            if (historyData.timestamps.length > maxHistory) {
+                historyData.timestamps.shift();
+                historyData.entropy.shift();
+                historyData.temperature.shift();
+            }
+
+            telemetryChart.data.labels = historyData.timestamps;
+            telemetryChart.data.datasets[0].data = historyData.entropy;
+            telemetryChart.data.datasets[1].data = historyData.temperature;
+            telemetryChart.update('none'); // Update without full animation for performance
+        }
+
+        function updateMonteCarloChart(basePrice, percentile) {
+            renderMonteCarloPaths(basePrice, percentile);
+        }
+
+        function renderMonteCarloPaths(basePrice, percentile = 85.0) {
+            const ctx2 = document.getElementById('monteCarloChart').getContext('2d');
+            const steps = 15;
+            const numPaths = 12;
+            const labels = Array.from({length: steps}, (_, i) => `T+${i}`);
+
+            const datasets = [];
+
+            // Generate sample paths around current price
+            for (let p = 0; p < numPaths; p++) {
+                let current = basePrice;
+                const path = [current];
+                const drift = (Math.random() - 0.48) * 0.002;
+                
+                for (let s = 1; s < steps; s++) {
+                    const shock = (Math.random() - 0.5) * 0.004 + drift;
+                    current = current * (1 + shock);
+                    path.push(current);
+                }
+
+                const isBullish = path[steps - 1] >= basePrice;
+                datasets.push({
+                    label: `Path ${p}`,
+                    data: path,
+                    borderColor: isBullish ? 'rgba(57, 255, 20, 0.35)' : 'rgba(255, 0, 85, 0.35)',
+                    borderWidth: 1.2,
+                    pointRadius: 0,
+                    tension: 0.2
+                });
+            }
+
+            if (monteCarloChart) {
+                monteCarloChart.destroy();
+            }
+
+            monteCarloChart = new Chart(ctx2, {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            grid: { color: '#1f293d' },
+                            ticks: { color: '#414868', font: { family: 'JetBrains Mono', size: 9 } }
+                        },
+                        y: {
+                            grid: { color: '#1f293d' },
+                            ticks: { color: '#c0caf5', font: { family: 'JetBrains Mono', size: 9 } }
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('monte-percentile').innerText = `${percentile.toFixed(1)}% PASS`;
+        }
+
+        // UTILS
+        function updateConnectionStatus(online) {
+            const led = document.getElementById('ping-led');
+            const text = document.getElementById('ping-text');
+            if (online) {
+                led.className = "w-2.5 h-2.5 rounded-full bg-cyber-neon animate-ping";
+                text.innerText = mode === 'LIVE' ? "ONLINE" : "DEMO ENGINE";
+                text.className = "text-cyber-neon font-bold";
+            } else {
+                led.className = "w-2.5 h-2.5 rounded-full bg-cyber-danger";
+                text.innerText = "OFFLINE";
+                text.className = "text-cyber-danger font-bold";
+            }
+        }
+
+        function addLog(msg) {
+            const container = document.getElementById('log-container');
+            const time = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = "text-cyber-text/80 hover:text-white transition-colors border-b border-cyber-border/30 pb-0.5";
+            entry.innerHTML = `<span class="text-cyber-muted">[${time}]</span> ${msg}`;
+            container.appendChild(entry);
+
+            // Auto-scroll to bottom
+            container.scrollTop = container.scrollHeight;
+
+            // Cap logs to 50
+            if (container.children.length > 50) {
+                container.removeChild(container.firstChild);
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log-container').innerHTML = '';
+            addLog('Bitácora reiniciada.');
+        }
+    </script>
 </body>
 </html>
+```
