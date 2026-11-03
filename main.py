@@ -17,14 +17,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Ruta raíz para servir tu interfaz index.html directamente
 @app.get("/", response_class=HTMLResponse)
 async def root():
     file_path = "index.html"
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
-    return HTMLResponse(content="<h1>Error: index.html no encontrado en el contenedor</h1>", status_code=404)
+    return HTMLResponse(content="<h1>Error: index.html no encontrado</h1>", status_code=404)
 
 class ConnectionManager:
     def __init__(self):
