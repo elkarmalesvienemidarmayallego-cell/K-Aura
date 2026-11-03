@@ -187,6 +187,16 @@
     <script>
         lucide.createIcons();
 
+// CONEXIÓN WEBSOCKET CON EL MOTOR EN RENDER
+const ws = new WebSocket('wss://k-aura-ser.onrender.com/ws/metrics');
+
+ws.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    // Aquí puedes capturar las métricas de btc_price y shannon_entropy en vivo
+    console.log("Métrica recibida:", data);
+};
+
+
         function connectRealWallet() {
             const wallet = document.getElementById('userWallet').value;
             const alertBox = document.getElementById('walletAlert');
