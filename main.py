@@ -1,7 +1,9 @@
 import asyncio
 import json
 import random
+import os
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from motor_blockchain import calculate_shannon_entropy, evaluate_market_risk
 
@@ -15,14 +17,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# <-- AÑADE ESTA RUTA AQUÍ PARA EVITAR EL "NOT FOUND" EN LA RAÍZ -->
-@app.get("/")
+# Ruta raíz para servir tu interfaz index.html directamente
+@app.get("/", response_class=HTMLResponse)
 async def root():
-    return {
-        "status": "ONLINE",
-        "engine": "K-Aura Core Engine v2.1",
-        "websocket_endpoint": "/ws/metrics"
-    }
+    file_path = "index.html"
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return HTMLResponse(content="<h1>Error: index.html no encontrado en el contenedor</h1>", status_code=404)
 
 class ConnectionManager:
     def __init__(self):
