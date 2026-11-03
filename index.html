@@ -1,221 +1,62 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-AURA Core Engine v2.1</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Chart.js para los gráficos estocásticos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { background-color: #080B11; color: #E2E8F0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-        .glow-border { border: 1px solid rgba(56, 189, 248, 0.2); box-shadow: 0 0 15px rgba(56, 189, 248, 0.05); }
-    </style>
-</head>
-<body class="p-4 md:p-8 max-w-5xl mx-auto">
+import asyncio
+import json
+import random
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+from motor_blockchain import calculate_shannon_entropy, evaluate_market_risk
 
-    <!-- HEADER / LIVE STATUS -->
-    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 mb-4 flex flex-wrap justify-between items-center gap-4 glow-border">
-        <div>
-            <div class="flex items-center gap-2">
-                <span class="font-bold text-xl text-white tracking-wider">K-AURA</span>
-                <span class="text-xs bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded">CORE ENGINE v2.1</span>
-            </div>
-            <p class="text-[11px] text-slate-400 mt-0.5">Fintech B2B · Polygon Network · Probabilistic Risk Management</p>
-        </div>
-        <div class="flex gap-6 text-xs font-mono">
-            <div>
-                <span class="text-slate-500 block">BTC/USD LIVE TICK</span>
-                <span class="text-cyan-400 font-bold">$67,245.50</span>
-            </div>
-            <div>
-                <span class="text-slate-500 block">LATENCY / HASH</span>
-                <span class="text-slate-200">12ms | 642 EH/s</span>
-            </div>
-            <div>
-                <span class="text-slate-500 block">ENGINE STATUS</span>
-                <span class="text-emerald-400 font-bold flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> OPERATIONAL
-                </span>
-            </div>
-        </div>
-    </div>
+app = FastAPI(title="K-Aura Quantitative Risk Engine", version="2.1")
 
-    <!-- PANEL DE CONEXIÓN DE WALLET & MODO REAL (AGREGADO FUNCIONAL) -->
-    <div class="bg-slate-900/90 p-4 rounded-xl border border-cyan-500/30 mb-4 bg-gradient-to-r from-slate-900 via-slate-900 to-cyan-950/30">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="p-2 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                    <i data-lucide="wallet" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <h3 class="text-xs font-bold text-white uppercase tracking-wider">Conexión de Producción & Payouts (USDT)</h3>
-                    <p class="text-[11px] text-slate-400">Enruta ganancias automáticas directo a tu wallet o cold storage</p>
-                </div>
-            </div>
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Sirve tu interfaz visual index.html directamente en la raíz
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return {"status": "ONLINE", "engine": "K-Aura Core Engine v2.1", "error": "index.html not found"}
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+manager = ConnectionManager()
+
+@app.websocket("/ws/metrics")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            btc_price = round(67000 + random.uniform(-150, 150), 2)
+            entropy = calculate_shannon_entropy()
+            status, action = evaluate_market_risk(btc_price, entropy)
             
-            <div class="flex items-center gap-2 w-full md:w-auto">
-                <input type="text" id="userWallet" placeholder="Dirección Wallet USDT (Polygon/Solana/TRC20)" 
-                    class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-cyan-300 w-full md:w-80 focus:outline-none focus:border-cyan-500">
-                <button onclick="connectRealWallet()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-lg transition-all shrink-0">
-                    CONECTAR
-                </button>
-            </div>
-        </div>
-        <div id="walletAlert" class="mt-2 text-[10px] text-slate-500 font-mono hidden"></div>
-    </div>
-
-    <!-- INYECCIÓN DE ESCENARIOS -->
-    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 mb-4">
-        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Inyección de Escenarios de Mercado en Tiempo Real:</span>
-        <div class="flex flex-wrap gap-2">
-            <button class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded border border-slate-700">Normal Ticks</button>
-            <button class="px-3 py-1.5 bg-cyan-950 text-cyan-400 border border-cyan-800 text-xs rounded font-bold">Alta Entropía (Caos)</button>
-            <button class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded border border-slate-700">Cascada Liquidadora</button>
-            <button class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded border border-slate-700">Fricción / Fee High</button>
-            <button onclick="runTestTrade()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded ml-auto">Test Execution Trade</button>
-        </div>
-    </div>
-
-    <!-- 1. ENTROPÍA DE SHANNON & METRICS -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-xs font-bold text-slate-300">1. ENTROPÍA DE SHANNON NORMALIZADA</span>
-                <span class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded">ÓPTIMA OPERABLE</span>
-            </div>
-            <div class="text-2xl font-bold text-cyan-400 mb-2">0.58 <span class="text-xs text-slate-500 font-normal">/ Umbral Caos: > 0.85</span></div>
-            <!-- Progress Bar -->
-            <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden mb-4">
-                <div class="bg-cyan-500 h-full w-[58%]"></div>
-            </div>
-            <!-- Histogram Graphic Placeholder -->
-            <div class="h-24 flex items-end gap-1 pt-2 border-t border-slate-800/50">
-                <div class="bg-cyan-500/40 w-1/8 h-[40%] rounded-t"></div>
-                <div class="bg-cyan-500/60 w-1/8 h-[70%] rounded-t"></div>
-                <div class="bg-cyan-500 w-1/8 h-[90%] rounded-t"></div>
-                <div class="bg-cyan-500/80 w-1/8 h-[60%] rounded-t"></div>
-                <div class="bg-cyan-500/50 w-1/8 h-[35%] rounded-t"></div>
-                <div class="bg-cyan-500/30 w-1/8 h-[20%] rounded-t"></div>
-            </div>
-        </div>
-
-        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-xs font-bold text-slate-300">2. FILTRO TERMODINÁMICO & FRICCIÓN</span>
-                <span class="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded">EJECUCIÓN PERMITIDA</span>
-            </div>
-            <div class="grid grid-cols-2 gap-2 text-xs mb-4">
-                <div class="bg-slate-950 p-2 rounded">
-                    <span class="text-slate-500 block">PRESIÓN Orderbook</span>
-                    <span class="text-cyan-400 font-bold">+0.45</span>
-                </div>
-                <div class="bg-slate-950 p-2 rounded">
-                    <span class="text-slate-500 block">TEMPERATURA Volatilidad</span>
-                    <span class="text-slate-200 font-bold">2.28</span>
-                </div>
-            </div>
-            <div class="text-[11px] space-y-1 text-slate-400 border-t border-slate-800/50 pt-2">
-                <div class="flex justify-between"><span>Taker Fee:</span> <span class="font-mono text-slate-200">0.040%</span></div>
-                <div class="flex justify-between"><span>Spread Actual:</span> <span class="font-mono text-slate-200">0.013%</span></div>
-                <div class="flex justify-between"><span>Fricción Total:</span> <span class="font-mono text-emerald-400">0.062% (OK &lt; 0.12%)</span></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. MOTOR ESPEJO MONTE CARLO -->
-    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 mb-4">
-        <div class="flex justify-between items-center mb-2">
-            <span class="text-xs font-bold text-slate-300">3. MOTOR ESPEJO MONTE CARLO (PRNG)</span>
-            <span class="text-[10px] bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded">INVALID (LOW EDGE)</span>
-        </div>
-        <p class="text-[10px] text-slate-500 font-mono mb-2">Semilla: BTC BLOCK HASH (SHA-256) 0x7fa39ce21bd5f6a...</p>
-        <div class="h-32 bg-slate-950 rounded p-2 flex items-center justify-center border border-slate-800/80">
-            <span class="text-xs text-cyan-500/50 font-mono">[ Vectorización: 1,000 Caminos Estocásticos Simulados ]</span>
-        </div>
-    </div>
-
-    <!-- FORENSIC DECISION LOGGER -->
-    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4">
-        <span class="text-xs font-bold text-slate-400 block mb-2">FORENSIC DECISION LOGGER</span>
-        <div id="logsContainer" class="h-24 overflow-y-auto text-[11px] font-mono space-y-1 text-slate-400">
-            <p><span class="text-slate-600">[00:22:42.051]</span> <span class="text-emerald-400">[EXECUTE]</span> SIMULATION_BUY OK @ $67261.56 | Profit: +$1250.00</p>
-            <p><span class="text-slate-600">[00:22:42.051]</span> <span class="text-cyan-400">[SWEEP]</span> Módulo de retiro: $250.00 movido a Cold Wallet automáticamente.</p>
-        </div>
-    </div>
-
-    <!-- 4. GESTOR DE CAPITAL & COLD WALLET -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
-            <span class="text-xs font-bold text-slate-300 block mb-2">4. GESTOR DE CAPITAL & COLD WALLET</span>
-            <div class="grid grid-cols-2 gap-2 mb-2">
-                <div class="bg-slate-950 p-2 rounded">
-                    <span class="text-[10px] text-slate-500 block">TRADING WALLET</span>
-                    <span id="tradingBal" class="text-lg font-bold text-white">$51,000.00</span>
-                </div>
-                <div class="bg-slate-950 p-2 rounded">
-                    <span class="text-[10px] text-slate-500 block">COLD WALLET (RETIROS)</span>
-                    <span id="coldBal" class="text-lg font-bold text-emerald-400">$12,700.00</span>
-                </div>
-            </div>
-            <p class="text-[10px] text-slate-500">Criterio de Kelly Fraccional (f = 0.25) | Win Rate Est: 62.0%</p>
-        </div>
-
-        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
-            <span class="text-xs font-bold text-slate-300 block mb-2">5. STOP-LOSS & TAKE-PROFIT DINÁMICOS</span>
-            <div class="space-y-2 text-xs">
-                <div class="flex justify-between bg-slate-950 p-2 rounded">
-                    <span class="text-slate-400">DYNAMIC STOP-LOSS:</span>
-                    <span class="text-red-400 font-mono font-bold">$65,570.5 (-1.89%)</span>
-                </div>
-                <div class="flex justify-between bg-slate-950 p-2 rounded">
-                    <span class="text-slate-400">DYNAMIC TAKE-PROFIT:</span>
-                    <span class="text-emerald-400 font-mono font-bold">$69,172.3 (+3.50%)</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- FOOTER -->
-    <div class="text-center text-[10px] text-slate-600 border-t border-slate-900 pt-4">
-        KEMPROMED ECOSYSTEM // K-AURA CORE ENGINE v2.1 // QUANTITATIVE AUTOMATED RISK ENGINE
-    </div>
-
-    <script>
-        lucide.createIcons();
-
-// CONEXIÓN WEBSOCKET CON EL MOTOR EN RENDER
-const ws = new WebSocket('wss://k-aura-ser.onrender.com/ws/metrics');
-
-ws.onmessage = function(event) {
-    const data = JSON.parse(event.data);
-    // Aquí puedes capturar las métricas de btc_price y shannon_entropy en vivo
-    console.log("Métrica recibida:", data);
-};
-
-
-        function connectRealWallet() {
-            const wallet = document.getElementById('userWallet').value;
-            const alertBox = document.getElementById('walletAlert');
-            if(wallet.length < 10) {
-                alertBox.innerText = '⚠️ Ingresa una dirección wallet válida.';
-                alertBox.className = 'mt-2 text-[10px] text-red-400 font-mono';
-            } else {
-                alertBox.innerText = '✓ Wallet vinculada en directo: ' + wallet + ' (Payouts USDT habilitados)';
-                alertBox.className = 'mt-2 text-[10px] text-emerald-400 font-mono';
-                document.getElementById('tradingBal').innerText = '$500.00 MXN';
+            payload = {
+                "btc_price": btc_price,
+                "shannon_entropy": entropy,
+                "volatility_temp": round(random.uniform(1.5, 3.5), 2),
+                "engine_status": status,
+                "mitigation_action": action
             }
-        }
-
-        function runTestTrade() {
-            const logger = document.getElementById('logsContainer');
-            const now = new Date().toISOString().substring(11, 23);
-            logger.innerHTML += `<p><span class="text-slate-600">[${now}]</span> <span class="text-emerald-400">[LIVE EXECUTION]</span> Order OK | Profit: +$100.00 USDT -> Enrutado a Cold Wallet</p>`;
-            logger.scrollTop = logger.scrollHeight;
-        }
-    </script>
-</body>
-</html>
+            
+            await websocket.send_text(json.dumps(payload))
+            await asyncio.sleep(2.0)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
