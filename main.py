@@ -1,17 +1,52 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-import os
+import asyncio
+import json
+import random
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from motor_blockchain import calculate_shannon_entropy, evaluate_market_risk
 
-app = FastAPI(title="KemProMed API & Hub")
+app = FastAPI(title="K-Aura Quantitative Risk Engine", version="2.1")
 
-@app.get("/", response_class=HTMLResponse)
-def read_root():
-    # Lee el archivo index.html
-    if os.path.exists("index.html"):
-        with open("index.html", "r", encoding="utf-8") as f:
-            return f.read()
-    return "<h1>KemProMed Backend Online</h1>"
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+manager = ConnectionManager()
+
+@app.websocket("/ws/metrics")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            btc_price = round(67000 + random.uniform(-150, 150), 2)
+            entropy = calculate_shannon_entropy()
+            status, action = evaluate_market_risk(btc_price, entropy)
+            
+            payload = {
+                "btc_price": btc_price,
+                "shannon_entropy": entropy,
+                "volatility_temp": round(random.uniform(1.5, 3.5), 2),
+                "engine_status": status,
+                "mitigation_action": action
+            }
+            
+            await websocket.send_text(json.dumps(payload))
+            await asyncio.sleep(2.0)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
