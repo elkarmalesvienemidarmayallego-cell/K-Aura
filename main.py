@@ -15,6 +15,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# <-- AÑADE ESTA RUTA AQUÍ PARA EVITAR EL "NOT FOUND" EN LA RAÍZ -->
+@app.get("/")
+async def root():
+    return {
+        "status": "ONLINE",
+        "engine": "K-Aura Core Engine v2.1",
+        "websocket_endpoint": "/ws/metrics"
+    }
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
