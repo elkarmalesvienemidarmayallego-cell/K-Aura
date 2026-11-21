@@ -1,171 +1,175 @@
-import asyncio
-import json
-import random
-import math
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
+import os
+import stripe
+from fastapi import FastAPI, Request, Header, HTTPException
+from pydantic import BaseModel
 
-app = FastAPI(title="K-Aura Quantitative Risk Engine", version="2.1")
+app = FastAPI(title="K-Aura-ser | Kempro Tech Financial Engine")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# ==============================================================================
+# 1. CONFIGURACIÓN MAESTRA (Toma la llave mk_live_... de Render Environment)
+# ==============================================================================
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
-def calculate_shannon_entropy() -> float:
-    # Simulación estocástica de Shannon orientada al flujo de mercado
-    probabilities = [random.uniform(0.1, 0.4), random.uniform(0.1, 0.4), random.uniform(0.2, 0.5)]
-    total = sum(probabilities)
-    probs = [p / total for p in probabilities]
-    entropy = -sum(p * math.log2(p) for p in probs if p > 0)
-    return round(entropy, 4)
+# Inventa una contraseña larga para proteger tus endpoints de ejecución
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "KemproMaster2026_SuperSecret!")
 
-def evaluate_market_risk(btc_price: float, entropy: float):
-    if entropy > 1.45:
-        return "HIGH_ENTROPY_ALERT", "EXECUTE_HEDGE_STOPLOSS"
-    elif btc_price < 67000:
-        return "VOLATILITY_WARNING", "DYNAMIC_TAKE_PROFIT"
-    return "OPERATIONAL", "STABLE_MONTE_CARLO"
+# Pon aquí los correos reales de tus 2 colaboradores para el setup inicial
+COLAB_1_EMAIL = "correo_colab1@dominio.com"
+COLAB_2_EMAIL = "correo_colab2@dominio.com"
 
-HTML_CONTENT = """<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-AURA Core Engine v2.1</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        body { background-color: #08111B; color: #E2E8F0; font-family: ui-sans-serif, system-ui, sans-serif; }
-        .glow-border { border: 1px solid rgba(59, 130, 246, 0.2); box-shadow: 0 0 15px rgba(59, 130, 246, 0.05); }
-    </style>
-</head>
-<body class="p-4 md:p-8 max-w-5xl mx-auto">
-    <!-- HEADER / LIVE STATUS -->
-    <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 flex flex-wrap justify-between items-center gap-4 glow-border">
-        <div class="flex items-center gap-2">
-            <span class="font-bold text-xl text-white tracking-wider">K-AURA</span>
-            <span class="text-xs bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded-full">CORE ENGINE v2.1</span>
-        </div>
-        <div class="flex items-center gap-6 text-xs font-mono">
-            <div>BTC/USD LIVE TICK: <span id="btcPrice" class="text-cyan-400 font-bold">$67,245.59</span></div>
-            <div>ENTROPY: <span id="entropyVal" class="text-cyan-300 font-bold">1.2410</span></div>
-            <div>STATUS: <span id="engineStatus" class="text-emerald-400 font-bold">OPERATIONAL</span></div>
-        </div>
-    </div>
+# Una vez que corras /setup-colaboradores, pega aquí los dos acct_... generados
+# (O guárdalos en Render Environment como COLAB_1_ACCT y COLAB_2_ACCT)
+COLAB_1_ACCT = os.getenv("COLAB_1_ACCT", "acct_PENDIENTE_1")
+COLAB_2_ACCT = os.getenv("COLAB_2_ACCT", "acct_PENDIENTE_2")
 
-    <!-- PANEL DE MÉTRICAS CUANTITATIVAS Y MITIGACIÓN -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-        <div class="bg-slate-900/90 p-5 rounded-xl border border-slate-800 glow-border">
-            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Simulación Monte Carlo & Temp</h4>
-            <div class="text-2xl font-mono text-white font-bold" id="volatilityTemp">2.45x</div>
-            <p class="text-[11px] text-slate-500 mt-1">Factor dinámico de volatilidad en tiempo real.</p>
-        </div>
-        <div class="bg-slate-900/90 p-5 rounded-xl border border-slate-800 glow-border">
-            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Acción de Mitigación Automática</h4>
-            <div class="text-sm font-mono text-cyan-400 font-bold" id="mitigationAction">STABLE_MONTE_CARLO</div>
-            <p class="text-[11px] text-slate-500 mt-1">Ejecución algorítmica de stop-loss y take-profit.</p>
-        </div>
-    </div>
+# Porcentajes de dispersión sobre cada cobro recibido (ej. 0.25 = 25%, 0.15 = 15%)
+PORCENTAJE_COLAB_1 = 0.25  # <--- Ajusta el % del Colaborador 1
+PORCENTAJE_COLAB_2 = 0.15  # <--- Ajusta el % del Colaborador 2
 
-    <!-- PANEL DE CONEXIÓN DE WALLET Y PAYOUTS -->
-    <div class="mt-6 bg-slate-900/90 p-6 rounded-xl border border-cyan-500/30 glow-border">
-        <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2">Conexión de Producción & Payouts (USDT)</h3>
-        <p class="text-[11px] text-slate-400 mb-4">Enruta ganancias automáticas directo a tu wallet o cold storage.</p>
-        
-        <div class="flex items-center gap-2 w-full md:w-auto">
-            <input type="text" id="userWallet" placeholder="Dirección Wallet USDT (Polygon/Solana/TRC20)" class="bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs text-cyan-300 w-full focus:outline-none focus:border-cyan-500">
-            <button onclick="connectRealWallet()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded transition-all whitespace-nowrap">CONECTAR</button>
-        </div>
-        <div id="walletAlert" class="mt-2 text-[10px] text-slate-500 font-mono hidden"></div>
-    </div>
+# Opcional: Secreto del Webhook de Stripe (whsec_...) si activas dispersión automática
+WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
 
-    <!-- SCRIPT DE WEBSOCKET EN VIVO -->
-    <script>
-        lucide.createIcons();
 
-        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        const wsUrl = protocol + window.location.host + '/ws/metrics';
-        const ws = new WebSocket(wsUrl);
+# ==============================================================================
+# 2. ENDPOINT DISRUPTIVO: CREA LOS 2 ESPACIOS EN PRODUCCIÓN AL INSTANTE
+# ==============================================================================
+@app.get("/setup-colaboradores")
+def setup_colaboradores(token: str):
+    """
+    Ábrelo directo en tu navegador así:
+    https://tu-app.onrender.com/setup-colaboradores?token=KemproMaster2026_SuperSecret!
+    """
+    if token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Token no autorizado")
 
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            
-            document.getElementById('btcPrice').innerText = `$${data.btc_price.toLocaleString()}`;
-            document.getElementById('entropyVal').innerText = data.shannon_entropy;
-            document.getElementById('volatilityTemp').innerText = `${data.volatility_temp}x`;
-            
-            const statusEl = document.getElementById('engineStatus');
-            statusEl.innerText = data.engine_status;
-            statusEl.className = data.engine_status === 'OPERATIONAL' ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold';
-            
-            document.getElementById('mitigationAction').innerText = data.mitigation_action;
-        };
-
-        ws.onclose = function() {
-            const statusEl = document.getElementById('engineStatus');
-            statusEl.innerText = "DISCONNECTED";
-            statusEl.className = "text-red-500 font-bold";
-        };
-
-        function connectRealWallet() {
-            const wallet = document.getElementById('userWallet').value;
-            const alertBox = document.getElementById('walletAlert');
-            alertBox.classList.remove('hidden');
-            
-            if (wallet.length > 10) {
-                alertBox.className = "mt-2 text-[10px] text-emerald-400 font-mono";
-                alertBox.innerText = `✓ Wallet vinculada en directo: ${wallet} (Payouts USDT habilitados)`;
-            } else {
-                alertBox.className = "mt-2 text-[10px] text-red-400 font-mono";
-                alertBox.innerText = `⚠ Ingresa una dirección wallet válida.`;
-            }
-        }
-    </script>
-</body>
-</html>
-"""
-
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return HTML_CONTENT
-
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: list[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-
-manager = ConnectionManager()
-
-@app.websocket("/ws/metrics")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
     try:
-        while True:
-            btc_price = round(67000 + random.uniform(-250, 250), 2)
-            entropy = calculate_shannon_entropy()
-            status, action = evaluate_market_risk(btc_price, entropy)
-            
-            payload = {
-                "btc_price": btc_price,
-                "shannon_entropy": entropy,
-                "volatility_temp": round(random.uniform(1.2, 3.8), 2),
-                "engine_status": status,
-                "mitigation_action": action
-            }
-            
-            await websocket.send_text(json.dumps(payload))
-            await asyncio.sleep(2.0)
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        colaboradores = [
+            {"alias": "02-COLAB-1", "email": COLAB_1_EMAIL},
+            {"alias": "03-COLAB-2", "email": COLAB_2_EMAIL},
+        ]
+        resultados = []
+
+        for colab in colaboradores:
+            # Crea cuenta Express en México (MXN) habilitada solo para recibir transferencias
+            account = stripe.Account.create(
+                type="express",
+                country="MX",
+                email=colab["email"],
+                capabilities={
+                    "transfers": {"requested": True},
+                },
+                business_type="individual",
+                metadata={"alias": colab["alias"], "plataforma": "Kempro Tech"},
+            )
+
+            # Genera link oficial de Stripe para que capturen INE, RFC y CLABE
+            account_link = stripe.AccountLink.create(
+                account=account.id,
+                refresh_url="https://kempromed.com",
+                return_url="https://kempromed.com",
+                type="account_onboarding",
+            )
+
+            resultados.append({
+                "alias": colab["alias"],
+                "account_id": account.id,
+                "onboarding_url": account_link.url,
+            })
+
+        return {
+            "status": "SUCCESS",
+            "instruccion": "Guarda estos dos account_id en Render (COLAB_1_ACCT y COLAB_2_ACCT) y envía cada onboarding_url a su colaborador.",
+            "cuentas": resultados,
+        }
+
+    except stripe.error.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e.user_message or e))
+
+
+# ==============================================================================
+# 3. FUNCIÓN CENTRAL DE DISPERSIÓN EN MXN (CENTAVOS EXACTOS)
+# ==============================================================================
+def ejecutar_dispersion(monto_total_centavos: int, referencia: str):
+    if "PENDIENTE" in COLAB_1_ACCT or "PENDIENTE" in COLAB_2_ACCT:
+        raise ValueError("Falta configurar COLAB_1_ACCT o COLAB_2_ACCT en Render.")
+
+    monto_c1 = int(round(monto_total_centavos * PORCENTAJE_COLAB_1))
+    monto_c2 = int(round(monto_total_centavos * PORCENTAJE_COLAB_2))
+
+    transfers = []
+
+    if monto_c1 > 0:
+        t1 = stripe.Transfer.create(
+            amount=monto_c1,
+            currency="mxn",
+            destination=COLAB_1_ACCT,
+            transfer_group=referencia,
+            metadata={"destino": "02-COLAB-1", "referencia": referencia},
+        )
+        transfers.append({"colab": "02-COLAB-1", "mxn": monto_c1 / 100, "transfer_id": t1.id})
+
+    if monto_c2 > 0:
+        t2 = stripe.Transfer.create(
+            amount=monto_c2,
+            currency="mxn",
+            destination=COLAB_2_ACCT,
+            transfer_group=referencia,
+            metadata={"destino": "03-COLAB-2", "referencia": referencia},
+        )
+        transfers.append({"colab": "03-COLAB-2", "mxn": monto_c2 / 100, "transfer_id": t2.id})
+
+    return transfers
+
+
+# ==============================================================================
+# 4. DISPARO MANUAL DE DISPERSIÓN (POR SI QUIERES REPARTIR UN MONTO EXACTO)
+# ==============================================================================
+class DispersionManual(BaseModel):
+    monto_mxn: float
+    referencia: str = "DISPERSION_MANUAL_KEMPRO"
+
+@app.post("/dispersar-manual")
+def dispersar_manual(payload: DispersionManual, x_admin_token: str = Header(None)):
+    if x_admin_token != ADMIN_TOKEN:
+        raise HTTPException(status_code=401, detail="Header x-admin-token inválido")
+
+    try:
+        centavos = int(round(payload.monto_mxn * 100))
+        resultado = ejecutar_dispersion(centavos, payload.referencia)
+        return {"status": "DISPERSADO", "total_base_mxn": payload.monto_mxn, "detalle": resultado}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ==============================================================================
+# 5. PILOTO AUTOMÁTICO: WEBHOOK DE STRIPE (DISPERSA EN CUANTO ENTRA UN COBRO)
+# ==============================================================================
+@app.post("/webhook-stripe")
+async def webhook_stripe(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+
+    try:
+        if WEBHOOK_SECRET:
+            event = stripe.Webhook.construct_event(payload, sig_header, WEBHOOK_SECRET)
+        else:
+            event = stripe.Event.construct_from(await request.json(), stripe.api_key)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error de firma Webhook: {str(e)}")
+
+    # Cuando se completa un pago en tu enlace de pago o checkout
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        monto_cobrado = session.get("amount_total", 0)  # Ya viene en centavos MXN
+        session_id = session.get("id", "SESSION_UNKNOWN")
+
+        if monto_cobrado > 0:
+            dispersiones = ejecutar_dispersion(monto_cobrado, session_id)
+            return {"status": "AUTO_DISPERSADO", "session": session_id, "dispersiones": dispersiones}
+
+    return {"status": "IGNORADO", "event_type": event["type"]}
+
+
+@app.get("/")
+def healthcheck():
+    return {"sistema": "K-Aura-ser", "estado": "ACTIVO_PRODUCCION", "moneda": "MXN"}
