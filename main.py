@@ -14,8 +14,8 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "KemproMaster2026_SuperSecret!")
 
 # Pon aquí los correos reales de tus 2 colaboradores para el setup inicial
-COLAB_1_EMAIL = "correo_colab1@dominio.com"
-COLAB_2_EMAIL = "correo_colab2@dominio.com"
+COLAB_1_EMAIL = "multiservicios@tom-alx.space"
+COLAB_2_EMAIL = "direccion@kempromed.com"
 
 # Una vez que corras /setup-colaboradores, pega aquí los dos acct_... generados
 # (O guárdalos en Render Environment como COLAB_1_ACCT y COLAB_2_ACCT)
