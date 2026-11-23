@@ -260,4 +260,4 @@ async def k_aura_dashboard():
         </script>
     </body>
     </html>
-    """    return {"sistema": "K-Aura-ser", "estado": "ACTIVO_PRODUCCION", "moneda": "MXN"}
+    """
